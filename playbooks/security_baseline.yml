@@ -1,6 +1,6 @@
 ---
 - name: Linux Security Baseline
-  hosts: linux_security
+  hosts: all
   become: true
   gather_facts: true
   any_errors_fatal: true
