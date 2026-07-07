@@ -2,7 +2,18 @@
 - name: Reload auditd configuration
   ansible.builtin.systemd:
     name: "{{ linux_security_baseline_auditd_service.name }}"
-    state: reloaded
+    state: restarted
+  register: linux_security_baseline_auditd_reload_result
+  failed_when: false
+
+- name: Warn when auditd reload/restart was not applicable
+  ansible.builtin.debug:
+    msg: >-
+      auditd service reload/restart was skipped or not applicable on this host:
+      {{ linux_security_baseline_auditd_reload_result.msg | default('no detailed message') }}
+  when:
+    - linux_security_baseline_auditd_reload_result is defined
+    - linux_security_baseline_auditd_reload_result.failed | default(false) | bool
 
 - name: Load audit rules with augenrules
   ansible.builtin.command:
