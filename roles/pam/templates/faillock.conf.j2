@@ -1,0 +1,9 @@
+# Ansible managed: Linux Security Baseline account lockout policy.
+
+deny = {{ linux_security_baseline_pam_faillock.deny }}
+fail_interval = {{ linux_security_baseline_pam_faillock.fail_interval }}
+unlock_time = {{ linux_security_baseline_pam_faillock.unlock_time }}
+{% if linux_security_baseline_pam_faillock.even_deny_root | bool %}
+even_deny_root
+root_unlock_time = {{ linux_security_baseline_pam_faillock.root_unlock_time }}
+{% endif %}

@@ -1,0 +1,16 @@
+---
+linux_security_baseline_pam_domain: pam
+linux_security_baseline_pam_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_pam_pwquality_template: pwquality.conf.j2
+linux_security_baseline_pam_faillock_template: faillock.conf.j2
+linux_security_baseline_pam_pwhistory_template: pwhistory.conf.j2
+
+linux_security_baseline_pam_authselect_custom_profile: >-
+  custom/{{ linux_security_baseline_pam_authselect.custom_profile_name }}
+linux_security_baseline_pam_authselect_custom_profile_path: >-
+  /etc/authselect/custom/{{ linux_security_baseline_pam_authselect.custom_profile_name }}

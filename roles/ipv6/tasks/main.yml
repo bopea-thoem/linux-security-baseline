@@ -1,0 +1,63 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for IPv6 role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_ipv6_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for ipv6 role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for ipv6 role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_ipv6_enabled | bool
+  tags:
+    - always
+    - baseline
+    - ipv6
+    - ipv6_verify
+
+- name: Build effective IPv6 sysctl settings
+  ansible.builtin.set_fact:
+    linux_security_baseline_ipv6_effective_sysctl_settings: >-
+      {{
+        linux_security_baseline_ipv6_sysctl_settings
+        + (
+          linux_security_baseline_ipv6_disable_sysctl_settings
+          if linux_security_baseline_ipv6_disable_ipv6 | bool
+          else []
+        )
+      }}
+  when: linux_security_baseline_ipv6_enabled | bool
+  tags:
+    - baseline
+    - ipv6
+    - ipv6_sysctl
+
+- name: Configure IPv6 sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: "{{ linux_security_baseline_ipv6_sysctl_file }}"
+    state: present
+    sysctl_set: true
+    reload: true
+  loop: "{{ linux_security_baseline_ipv6_effective_sysctl_settings }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - linux_security_baseline_ipv6_enabled | bool
+    - linux_security_baseline_ipv6_manage_sysctl | bool
+  tags:
+    - baseline
+    - ipv6
+    - ipv6_sysctl
+
+- name: Import IPv6 verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_ipv6_enabled | bool
+  tags:
+    - baseline
+    - ipv6
+    - ipv6_verify
+    - verify

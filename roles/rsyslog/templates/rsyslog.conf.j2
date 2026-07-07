@@ -1,0 +1,14 @@
+# Ansible managed: Linux Security Baseline rsyslog configuration.
+
+{% for module_name in linux_security_baseline_rsyslog_modules %}
+$ModLoad {{ module_name }}
+{% endfor %}
+
+$WorkDirectory {{ linux_security_baseline_rsyslog_global_directives.work_directory }}
+$IMJournalStateFile {{ linux_security_baseline_rsyslog_global_directives.imjournal_state_file }}
+
+{% for rule in linux_security_baseline_rsyslog_rules %}
+{{ rule.selector }} {{ rule.action }}
+{% endfor %}
+
+$IncludeConfig {{ linux_security_baseline_rsyslog_dropin_directory.path }}/*.conf

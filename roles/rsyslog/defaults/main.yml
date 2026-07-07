@@ -1,0 +1,56 @@
+---
+linux_security_baseline_rsyslog_enabled: true
+linux_security_baseline_rsyslog_install: true
+linux_security_baseline_rsyslog_manage_service: true
+linux_security_baseline_rsyslog_manage_main_config: true
+linux_security_baseline_rsyslog_manage_dropin_directory: true
+linux_security_baseline_rsyslog_verify: true
+linux_security_baseline_rsyslog_verify_fail_on_drift: true
+
+linux_security_baseline_rsyslog_packages:
+  - rsyslog
+
+linux_security_baseline_rsyslog_service:
+  name: rsyslog
+  enabled: true
+  state: started
+
+linux_security_baseline_rsyslog_main_config:
+  path: /etc/rsyslog.conf
+  owner: root
+  group: root
+  mode: "0644"
+
+linux_security_baseline_rsyslog_dropin_directory:
+  path: /etc/rsyslog.d
+  owner: root
+  group: root
+  mode: "0755"
+
+linux_security_baseline_rsyslog_modules:
+  - imuxsock
+  - imjournal
+
+linux_security_baseline_rsyslog_global_directives:
+  work_directory: /var/lib/rsyslog
+  imjournal_state_file: imjournal.state
+
+linux_security_baseline_rsyslog_rules:
+  - selector: "*.info;mail.none;authpriv.none;cron.none"
+    action: /var/log/messages
+  - selector: "authpriv.*"
+    action: /var/log/secure
+  - selector: "mail.*"
+    action: -/var/log/maillog
+  - selector: "cron.*"
+    action: /var/log/cron
+  - selector: "*.emerg"
+    action: ":omusrmsg:*"
+  - selector: "uucp,news.crit"
+    action: /var/log/spooler
+  - selector: "local7.*"
+    action: /var/log/boot.log
+
+linux_security_baseline_rsyslog_tags:
+  - baseline
+  - rsyslog

@@ -1,0 +1,91 @@
+---
+linux_security_baseline_ssh_enabled: true
+linux_security_baseline_ssh_install: true
+linux_security_baseline_ssh_manage_config: true
+linux_security_baseline_ssh_manage_banner: true
+linux_security_baseline_ssh_manage_service: true
+linux_security_baseline_ssh_verify: true
+linux_security_baseline_ssh_verify_fail_on_drift: true
+
+linux_security_baseline_ssh_packages:
+  - openssh-server
+
+linux_security_baseline_ssh_service:
+  name: sshd
+  enabled: true
+  state: started
+  apply_state_on_config_change: reloaded
+
+linux_security_baseline_ssh_paths:
+  sshd_binary: /usr/sbin/sshd
+  main_config: /etc/ssh/sshd_config
+  config_directory: /etc/ssh/sshd_config.d
+  baseline_config: /etc/ssh/sshd_config.d/00-linux-security-baseline.conf
+  banner: /etc/issue.net
+
+linux_security_baseline_ssh_main_config:
+  owner: root
+  group: root
+  mode: "0600"
+  include_marker: "# {mark} ANSIBLE MANAGED BLOCK - Linux Security Baseline ssh include"
+  include_line: Include /etc/ssh/sshd_config.d/*.conf
+
+linux_security_baseline_ssh_config_directory:
+  owner: root
+  group: root
+  mode: "0755"
+
+linux_security_baseline_ssh_baseline_config:
+  owner: root
+  group: root
+  mode: "0600"
+
+linux_security_baseline_ssh_banner:
+  owner: root
+  group: root
+  mode: "0644"
+  text: |
+    Authorized uses only. All activity may be monitored and reported.
+
+linux_security_baseline_ssh_settings:
+  protocol: "2"
+  log_level: INFO
+  x11_forwarding: "no"
+  max_auth_tries: 4
+  ignore_rhosts: "yes"
+  hostbased_authentication: "no"
+  permit_root_login: "no"
+  permit_empty_passwords: "no"
+  permit_user_environment: "no"
+  client_alive_interval: 300
+  client_alive_count_max: 0
+  banner: /etc/issue.net
+
+linux_security_baseline_ssh_approved_ciphers:
+  - aes256-gcm@openssh.com
+  - aes128-gcm@openssh.com
+  - chacha20-poly1305@openssh.com
+  - aes256-ctr
+  - aes192-ctr
+  - aes128-ctr
+
+linux_security_baseline_ssh_render_protocol_directive: true
+linux_security_baseline_ssh_protocol_directive_deprecated_from_major: 8
+
+linux_security_baseline_ssh_openssh_fallback_version_by_rhel:
+  "7":
+    major: 7
+    minor: 4
+  "8":
+    major: 8
+    minor: 0
+  "9":
+    major: 8
+    minor: 7
+  "10":
+    major: 9
+    minor: 0
+
+linux_security_baseline_ssh_tags:
+  - baseline
+  - ssh

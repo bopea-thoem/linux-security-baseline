@@ -1,0 +1,189 @@
+---
+- name: Set effective filesystem verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_filesystem_dev_shm_effective: >-
+      {{
+        linux_security_baseline_filesystem_dev_shm
+        | default(linux_security_baseline_verify_filesystem_dev_shm)
+      }}
+    linux_security_baseline_verify_disabled_modules_effective: >-
+      {{
+        linux_security_baseline_filesystem_disabled_modules
+        | default(linux_security_baseline_verify_disabled_kernel_modules)
+      }}
+    linux_security_baseline_verify_modprobe_conf_effective: >-
+      {{
+        linux_security_baseline_filesystem_modprobe_conf
+        | default(linux_security_baseline_verify_filesystem_modprobe_conf)
+      }}
+  tags:
+    - baseline
+    - verify
+    - filesystem
+    - kernel_modules
+
+- name: Read /dev/shm mount options
+  ansible.builtin.command:
+    argv:
+      - findmnt
+      - -n
+      - -o
+      - OPTIONS
+      - "{{ linux_security_baseline_verify_filesystem_dev_shm_effective.path }}"
+  register: linux_security_baseline_verify_dev_shm_findmnt
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - filesystem
+
+- name: Record /dev/shm mount option compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'filesystem',
+            'control': '/dev/shm mount options',
+            'compliant': (
+              linux_security_baseline_verify_dev_shm_findmnt.rc == 0
+              and (
+                ['nodev', 'nosuid', 'noexec']
+                | difference(
+                  linux_security_baseline_verify_dev_shm_findmnt.stdout
+                  | default('')
+                  | trim
+                  | split(',')
+                )
+                | length
+              ) == 0
+            ),
+            'expected': 'nodev,nosuid,noexec',
+            'actual': (
+              linux_security_baseline_verify_dev_shm_findmnt.stdout
+              | default('not mounted')
+              | trim
+            ),
+            'message': 'Verify /dev/shm is mounted with nodev,nosuid,noexec.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - filesystem
+
+- name: Check filesystem module policy file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_verify_modprobe_conf_effective.path }}"
+  register: linux_security_baseline_verify_modprobe_conf_stat
+  tags:
+    - baseline
+    - verify
+    - kernel_modules
+
+- name: Read filesystem module policy file
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_modprobe_conf_effective.path }}"
+  register: linux_security_baseline_verify_modprobe_conf_slurp
+  when: linux_security_baseline_verify_modprobe_conf_stat.stat.exists
+  tags:
+    - baseline
+    - verify
+    - kernel_modules
+
+- name: Set filesystem module policy content
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_modprobe_conf_content: >-
+      {{
+        linux_security_baseline_verify_modprobe_conf_slurp.content
+        | default('')
+        | b64decode
+      }}
+  tags:
+    - baseline
+    - verify
+    - kernel_modules
+
+- name: Read loaded kernel modules
+  ansible.builtin.command:
+    argv:
+      - lsmod
+  register: linux_security_baseline_verify_loaded_modules
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - kernel_modules
+
+- name: Test module install overrides
+  ansible.builtin.command:
+    argv:
+      - modprobe
+      - -n
+      - -v
+      - "{{ item }}"
+  loop: "{{ linux_security_baseline_verify_disabled_modules_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  register: linux_security_baseline_verify_modprobe_tests
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - kernel_modules
+
+- name: Record disabled filesystem module compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'kernel_modules',
+            'control': 'disable filesystem module ' ~ item.item,
+            'compliant': (
+              (
+                linux_security_baseline_verify_loaded_modules.stdout
+                | default('')
+                | regex_search('(?m)^' ~ item.item ~ '\s')
+              ) is none
+              and (
+                '/bin/false' in (item.stdout | default(''))
+                or '/bin/true' in (item.stdout | default(''))
+              )
+              and (
+                'blacklist ' ~ item.item
+                in linux_security_baseline_verify_modprobe_conf_content
+              )
+              and (
+                'install ' ~ item.item ~ ' /bin/false'
+                in linux_security_baseline_verify_modprobe_conf_content
+              )
+            ),
+            'expected': 'not loaded, blacklisted, install override to /bin/false',
+            'actual': (
+              'loaded='
+              ~ (
+                (
+                  linux_security_baseline_verify_loaded_modules.stdout
+                  | default('')
+                  | regex_search('(?m)^' ~ item.item ~ '\s')
+                ) is not none
+              )
+              ~ '; modprobe='
+              ~ (item.stdout | default(item.stderr | default('missing')) | trim)
+            ),
+            'message': 'Verify disabled filesystem kernel module is blocked.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_modprobe_tests.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags:
+    - baseline
+    - verify
+    - kernel_modules

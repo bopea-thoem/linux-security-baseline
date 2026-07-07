@@ -1,0 +1,7 @@
+---
+linux_security_baseline_process_hardening_domain: process_hardening
+linux_security_baseline_process_hardening_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10

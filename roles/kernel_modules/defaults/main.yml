@@ -1,0 +1,6 @@
+---
+linux_security_baseline_kernel_modules_enabled: true
+linux_security_baseline_kernel_modules_tags:
+  - baseline
+  - kernel_modules
+

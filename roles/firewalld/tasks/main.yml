@@ -1,0 +1,52 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for firewalld role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_firewalld_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for firewalld role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for firewalld role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_firewalld_enabled | bool
+  tags:
+    - always
+    - baseline
+    - firewalld
+    - firewalld_verify
+
+- name: Install firewalld packages
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_firewalld_packages }}"
+    state: present
+  when:
+    - linux_security_baseline_firewalld_enabled | bool
+    - linux_security_baseline_firewalld_install | bool
+  tags:
+    - baseline
+    - firewalld
+    - firewalld_package
+
+- name: Enable and start firewalld service
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_firewalld_service.name }}"
+    enabled: "{{ linux_security_baseline_firewalld_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_firewalld_service.state }}"
+  when:
+    - linux_security_baseline_firewalld_enabled | bool
+    - linux_security_baseline_firewalld_manage_service | bool
+  tags:
+    - baseline
+    - firewalld
+    - firewalld_service
+
+- name: Import firewalld verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_firewalld_enabled | bool
+  tags:
+    - baseline
+    - firewalld
+    - firewalld_verify
+    - verify

@@ -1,0 +1,235 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for SSH role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_ssh_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for ssh role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for ssh role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_ssh_enabled | bool
+  tags:
+    - always
+    - baseline
+    - ssh
+    - ssh_verify
+
+- name: Install OpenSSH server packages
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_ssh_packages }}"
+    state: present
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_install | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_package
+
+- name: Detect OpenSSH version
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_ssh_paths.sshd_binary }}"
+      - -V
+  register: linux_security_baseline_ssh_version_command
+  changed_when: false
+  failed_when: false
+  when: linux_security_baseline_ssh_enabled | bool
+  tags:
+    - always
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Parse OpenSSH version parts
+  ansible.builtin.set_fact:
+    linux_security_baseline_ssh_openssh_version_matches: >-
+      {{
+        (
+          (linux_security_baseline_ssh_version_command.stdout | default(''))
+          ~ ' '
+          ~ (linux_security_baseline_ssh_version_command.stderr | default(''))
+        )
+        | regex_findall('OpenSSH_([0-9]+)\\.([0-9]+)')
+      }}
+  when: linux_security_baseline_ssh_enabled | bool
+  tags:
+    - always
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Set effective OpenSSH version facts
+  ansible.builtin.set_fact:
+    linux_security_baseline_ssh_detected_openssh_major: >-
+      {{
+        (
+          linux_security_baseline_ssh_openssh_version_matches[0][0]
+          if linux_security_baseline_ssh_openssh_version_matches | length > 0
+          else linux_security_baseline_ssh_openssh_fallback_version_by_rhel[
+            ansible_facts.distribution_major_version
+          ].major
+        ) | int
+      }}
+    linux_security_baseline_ssh_detected_openssh_minor: >-
+      {{
+        (
+          linux_security_baseline_ssh_openssh_version_matches[0][1]
+          if linux_security_baseline_ssh_openssh_version_matches | length > 0
+          else linux_security_baseline_ssh_openssh_fallback_version_by_rhel[
+            ansible_facts.distribution_major_version
+          ].minor
+        ) | int
+      }}
+  when: linux_security_baseline_ssh_enabled | bool
+  tags:
+    - always
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Set effective SSH directive compatibility facts
+  ansible.builtin.set_fact:
+    linux_security_baseline_ssh_protocol_directive_effective: >-
+      {{
+        linux_security_baseline_ssh_render_protocol_directive | bool
+        and linux_security_baseline_ssh_detected_openssh_major | int
+          < linux_security_baseline_ssh_protocol_directive_deprecated_from_major | int
+      }}
+  when: linux_security_baseline_ssh_enabled | bool
+  tags:
+    - always
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Ensure SSH configuration directory exists
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_ssh_paths.config_directory }}"
+    state: directory
+    owner: "{{ linux_security_baseline_ssh_config_directory.owner }}"
+    group: "{{ linux_security_baseline_ssh_config_directory.group }}"
+    mode: "{{ linux_security_baseline_ssh_config_directory.mode }}"
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Configure SSH login banner
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_ssh_banner_template }}"
+    dest: "{{ linux_security_baseline_ssh_paths.banner }}"
+    owner: "{{ linux_security_baseline_ssh_banner.owner }}"
+    group: "{{ linux_security_baseline_ssh_banner.group }}"
+    mode: "{{ linux_security_baseline_ssh_banner.mode }}"
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_manage_banner | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_banner
+
+- name: Configure SSH security baseline drop-in
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_ssh_config_template }}"
+    dest: "{{ linux_security_baseline_ssh_paths.baseline_config }}"
+    owner: "{{ linux_security_baseline_ssh_baseline_config.owner }}"
+    group: "{{ linux_security_baseline_ssh_baseline_config.group }}"
+    mode: "{{ linux_security_baseline_ssh_baseline_config.mode }}"
+    validate: "{{ linux_security_baseline_ssh_paths.sshd_binary }} -t -f %s"
+  notify: Apply sshd configuration
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Configure SSH main configuration ownership
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_ssh_paths.main_config }}"
+    state: file
+    owner: "{{ linux_security_baseline_ssh_main_config.owner }}"
+    group: "{{ linux_security_baseline_ssh_main_config.group }}"
+    mode: "{{ linux_security_baseline_ssh_main_config.mode }}"
+  notify: Apply sshd configuration
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Ensure SSH baseline include is first in sshd_config
+  ansible.builtin.blockinfile:
+    path: "{{ linux_security_baseline_ssh_paths.main_config }}"
+    insertbefore: BOF
+    marker: "{{ linux_security_baseline_ssh_main_config.include_marker }}"
+    block: "{{ linux_security_baseline_ssh_main_config.include_line }}"
+    owner: "{{ linux_security_baseline_ssh_main_config.owner }}"
+    group: "{{ linux_security_baseline_ssh_main_config.group }}"
+    mode: "{{ linux_security_baseline_ssh_main_config.mode }}"
+    validate: "{{ linux_security_baseline_ssh_paths.sshd_binary }} -t -f %s"
+  notify: Apply sshd configuration
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+
+- name: Validate active SSH daemon configuration
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_ssh_paths.sshd_binary }}"
+      - -t
+      - -f
+      - "{{ linux_security_baseline_ssh_paths.main_config }}"
+  changed_when: false
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+    - ssh_verify
+
+- name: Enable and start sshd service
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_ssh_service.name }}"
+    enabled: "{{ linux_security_baseline_ssh_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_ssh_service.state }}"
+  when:
+    - linux_security_baseline_ssh_enabled | bool
+    - linux_security_baseline_ssh_manage_service | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_service
+
+- name: Apply pending SSH handlers before verification
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - baseline
+    - ssh
+    - ssh_verify
+
+- name: Import SSH verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_ssh_enabled | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_verify
+    - verify

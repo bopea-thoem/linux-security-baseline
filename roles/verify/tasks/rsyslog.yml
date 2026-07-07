@@ -1,0 +1,254 @@
+---
+- name: Set effective rsyslog verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_rsyslog_packages_effective: >-
+      {{
+        linux_security_baseline_rsyslog_packages
+        | default(linux_security_baseline_verify_rsyslog_packages)
+      }}
+    linux_security_baseline_verify_rsyslog_service_effective: >-
+      {{
+        linux_security_baseline_rsyslog_service
+        | default(linux_security_baseline_verify_rsyslog_service)
+      }}
+    linux_security_baseline_verify_rsyslog_main_config_effective: >-
+      {{
+        linux_security_baseline_rsyslog_main_config
+        | default(linux_security_baseline_verify_rsyslog_main_config)
+      }}
+    linux_security_baseline_verify_rsyslog_dropin_directory_effective: >-
+      {{
+        linux_security_baseline_rsyslog_dropin_directory
+        | default(linux_security_baseline_verify_rsyslog_dropin_directory)
+      }}
+    linux_security_baseline_verify_rsyslog_modules_effective: >-
+      {{
+        linux_security_baseline_rsyslog_modules
+        | default(linux_security_baseline_verify_rsyslog_modules)
+      }}
+    linux_security_baseline_verify_rsyslog_rules_effective: >-
+      {{
+        linux_security_baseline_rsyslog_rules
+        | default(linux_security_baseline_verify_rsyslog_rules)
+      }}
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Record rsyslog package compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'rsyslog',
+            'control': 'package ' ~ item ~ ' installed',
+            'compliant': item in (ansible_facts.packages | default({})),
+            'expected': 'installed',
+            'actual': (
+              'installed'
+              if item in (ansible_facts.packages | default({}))
+              else 'missing'
+            ),
+            'message': 'Verify rsyslog package is installed.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_rsyslog_packages_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Record rsyslog service compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'rsyslog',
+            'control': 'service ' ~ linux_security_baseline_verify_rsyslog_service_effective.name,
+            'compliant': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_rsyslog_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing') == 'running'
+              and (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_rsyslog_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing') in ['enabled', 'static']
+            ),
+            'expected': 'running and enabled',
+            'actual': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_rsyslog_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing')
+              ~ '/'
+              ~ (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_rsyslog_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing')
+            ),
+            'message': 'Verify rsyslog service is active and enabled.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Check rsyslog configuration paths
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop:
+    - path: "{{ linux_security_baseline_verify_rsyslog_main_config_effective.path }}"
+      control: rsyslog.conf
+      mode: "{{ linux_security_baseline_verify_rsyslog_main_config_effective.mode }}"
+      state: file
+    - path: "{{ linux_security_baseline_verify_rsyslog_dropin_directory_effective.path }}"
+      control: rsyslog drop-in directory
+      mode: "{{ linux_security_baseline_verify_rsyslog_dropin_directory_effective.mode }}"
+      state: directory
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_verify_rsyslog_path_stats
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Record rsyslog path compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'rsyslog',
+            'control': item.item.control,
+            'compliant': (
+              item.stat.exists
+              and (
+                item.item.state == 'directory'
+                and item.stat.isdir
+                or item.item.state == 'file'
+                and item.stat.isreg
+              )
+              and item.stat.pw_name == 'root'
+              and item.stat.gr_name == 'root'
+              and item.stat.mode == item.item.mode
+            ),
+            'expected': item.item.state ~ ' root:root ' ~ item.item.mode,
+            'actual': (
+              item.stat.pw_name | default('missing')
+            )
+            ~ ':'
+            ~ (
+              item.stat.gr_name | default('missing')
+            )
+            ~ ' '
+            ~ (
+              item.stat.mode | default('missing')
+            ),
+            'message': 'Verify rsyslog configuration ownership and mode.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_rsyslog_path_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Read rsyslog main configuration
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_rsyslog_main_config_effective.path }}"
+  register: linux_security_baseline_verify_rsyslog_config_slurp
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Set rsyslog configuration content
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_rsyslog_config_content: >-
+      {{
+        linux_security_baseline_verify_rsyslog_config_slurp.content
+        | default('')
+        | b64decode
+      }}
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Record rsyslog module compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'rsyslog',
+            'control': 'rsyslog module ' ~ item,
+            'compliant': item in linux_security_baseline_verify_rsyslog_config_content,
+            'expected': 'module ' ~ item,
+            'actual': 'present' if item in linux_security_baseline_verify_rsyslog_config_content else 'missing',
+            'message': 'Verify required rsyslog input module is configured.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_rsyslog_modules_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - rsyslog
+
+- name: Record rsyslog rule compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'rsyslog',
+            'control': 'rsyslog rule ' ~ item.selector,
+            'compliant': (
+              item.selector in linux_security_baseline_verify_rsyslog_config_content
+              and item.action in linux_security_baseline_verify_rsyslog_config_content
+            ),
+            'expected': item.selector ~ ' ' ~ item.action,
+            'actual': (
+              'present'
+              if (
+                item.selector in linux_security_baseline_verify_rsyslog_config_content
+                and item.action in linux_security_baseline_verify_rsyslog_config_content
+              )
+              else 'missing'
+            ),
+            'message': 'Verify rsyslog routing rule is configured.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_rsyslog_rules_effective }}"
+  loop_control:
+    label: "{{ item.selector }}"
+  tags:
+    - baseline
+    - verify
+    - rsyslog

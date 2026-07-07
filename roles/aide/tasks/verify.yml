@@ -1,0 +1,77 @@
+---
+- name: Verify AIDE packages are installed
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_aide_packages }}"
+    state: present
+  check_mode: true
+  register: linux_security_baseline_aide_package_verify_result
+  failed_when:
+    - linux_security_baseline_aide_verify_fail_on_drift | bool
+    - linux_security_baseline_aide_package_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_aide_verify | bool
+    - linux_security_baseline_aide_install | bool
+  tags:
+    - baseline
+    - aide
+    - aide_package
+    - aide_verify
+    - verify
+
+- name: Verify active AIDE database exists
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_aide_database.path }}"
+  register: linux_security_baseline_aide_database_verify_stat
+  failed_when:
+    - linux_security_baseline_aide_verify_fail_on_drift | bool
+    - not linux_security_baseline_aide_database_verify_stat.stat.exists
+  when:
+    - linux_security_baseline_aide_verify | bool
+    - linux_security_baseline_aide_initialize | bool
+  tags:
+    - baseline
+    - aide
+    - aide_database
+    - aide_verify
+    - verify
+
+- name: Verify daily AIDE integrity check configuration
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_aide_cron_template }}"
+    dest: "{{ linux_security_baseline_aide_cron.path }}"
+    owner: "{{ linux_security_baseline_aide_cron.owner }}"
+    group: "{{ linux_security_baseline_aide_cron.group }}"
+    mode: "{{ linux_security_baseline_aide_cron.mode }}"
+  check_mode: true
+  register: linux_security_baseline_aide_cron_verify_result
+  failed_when:
+    - linux_security_baseline_aide_verify_fail_on_drift | bool
+    - linux_security_baseline_aide_cron_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_aide_verify | bool
+    - linux_security_baseline_aide_configure_daily_check | bool
+  tags:
+    - baseline
+    - aide
+    - aide_cron
+    - aide_verify
+    - verify
+
+- name: Run optional AIDE integrity verification
+  ansible.builtin.command:
+    cmd: "{{ linux_security_baseline_aide_cron.command }}"
+  check_mode: false
+  register: linux_security_baseline_aide_integrity_check_result
+  changed_when: false
+  failed_when:
+    - linux_security_baseline_aide_verify_integrity_check_fail_on_findings | bool
+    - linux_security_baseline_aide_integrity_check_result.rc != 0
+  when:
+    - linux_security_baseline_aide_verify | bool
+    - linux_security_baseline_aide_verify_run_integrity_check | bool
+  tags:
+    - baseline
+    - aide
+    - aide_integrity_check
+    - aide_verify
+    - verify

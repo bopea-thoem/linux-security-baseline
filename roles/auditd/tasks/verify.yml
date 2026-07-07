@@ -1,0 +1,287 @@
+---
+- name: Verify auditd packages are installed
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_auditd_packages }}"
+    state: present
+  check_mode: true
+  register: linux_security_baseline_auditd_package_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_package_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_install | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_package
+    - auditd_verify
+    - verify
+
+- name: Verify auditd directories
+  ansible.builtin.file:
+    path: "{{ item.value.path }}"
+    state: directory
+    owner: "{{ item.value.owner }}"
+    group: "{{ item.value.group }}"
+    mode: "{{ item.value.mode }}"
+  loop: "{{ linux_security_baseline_auditd_directories | dict2items }}"
+  loop_control:
+    label: "{{ item.value.path }}"
+  check_mode: true
+  register: linux_security_baseline_auditd_directory_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_directory_verify_result.changed | default(false)
+  when: linux_security_baseline_auditd_verify | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_config
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Verify auditd configuration
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_config_template }}"
+    dest: "{{ linux_security_baseline_auditd_config.path }}"
+    owner: "{{ linux_security_baseline_auditd_config.owner }}"
+    group: "{{ linux_security_baseline_auditd_config.group }}"
+    mode: "{{ linux_security_baseline_auditd_config.mode }}"
+  check_mode: true
+  register: linux_security_baseline_auditd_config_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_config_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_config | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_config
+    - auditd_verify
+    - verify
+
+- name: Check audit watch paths for verification
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop: "{{ linux_security_baseline_auditd_watch_rules }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_auditd_watch_path_stats
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Check audit executable rule paths for verification
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop: "{{ linux_security_baseline_auditd_exec_rules }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_auditd_exec_path_stats
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Check privileged executable discovery roots for verification
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ linux_security_baseline_auditd_privileged_command_discovery_paths }}"
+  loop_control:
+    label: "{{ item }}"
+  register: linux_security_baseline_auditd_privileged_discovery_root_stats
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_discover_privileged_commands | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Discover privileged executables for audit verification
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_auditd_find_path }}"
+      - "{{ item.item }}"
+      - -xdev
+      - -type
+      - f
+      - "("
+      - -perm
+      - "-4000"
+      - -o
+      - -perm
+      - "-2000"
+      - ")"
+  loop: "{{ linux_security_baseline_auditd_privileged_discovery_root_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: linux_security_baseline_auditd_discovered_exec_paths
+  changed_when: false
+  failed_when: false
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_discover_privileged_commands | bool
+    - item.stat.exists
+    - item.stat.isdir
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Verify audit base rules with augenrules backend
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_base_rules_template }}"
+    dest: "{{ linux_security_baseline_auditd_rules_files.base.path }}"
+    owner: "{{ linux_security_baseline_auditd_rules_files.base.owner }}"
+    group: "{{ linux_security_baseline_auditd_rules_files.base.group }}"
+    mode: "{{ linux_security_baseline_auditd_rules_files.base.mode }}"
+  check_mode: true
+  register: linux_security_baseline_auditd_base_rules_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_base_rules_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Verify audit main rules with augenrules backend
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_main_rules_template }}"
+    dest: "{{ linux_security_baseline_auditd_rules_files.main.path }}"
+    owner: "{{ linux_security_baseline_auditd_rules_files.main.owner }}"
+    group: "{{ linux_security_baseline_auditd_rules_files.main.group }}"
+    mode: "{{ linux_security_baseline_auditd_rules_files.main.mode }}"
+  check_mode: true
+  register: linux_security_baseline_auditd_main_rules_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_main_rules_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Verify audit finalize rules with augenrules backend
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_finalize_rules_template }}"
+    dest: "{{ linux_security_baseline_auditd_rules_files.finalize.path }}"
+    owner: "{{ linux_security_baseline_auditd_rules_files.finalize.owner }}"
+    group: "{{ linux_security_baseline_auditd_rules_files.finalize.group }}"
+    mode: "{{ linux_security_baseline_auditd_rules_files.finalize.mode }}"
+  check_mode: true
+  register: linux_security_baseline_auditd_finalize_rules_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_finalize_rules_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+    - linux_security_baseline_auditd_rules_immutable | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Verify managed audit finalize rules are absent when immutable is disabled
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_auditd_rules_files.finalize.path }}"
+    state: absent
+  check_mode: true
+  register: linux_security_baseline_auditd_finalize_absent_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_finalize_absent_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+    - not linux_security_baseline_auditd_rules_immutable | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Verify audit rules with legacy audit.rules backend
+  ansible.builtin.blockinfile:
+    path: "{{ linux_security_baseline_auditd_legacy_rules_file.path }}"
+    create: true
+    owner: "{{ linux_security_baseline_auditd_legacy_rules_file.owner }}"
+    group: "{{ linux_security_baseline_auditd_legacy_rules_file.group }}"
+    mode: "{{ linux_security_baseline_auditd_legacy_rules_file.mode }}"
+    marker: "{{ linux_security_baseline_auditd_legacy_rules_file.marker }}"
+    block: "{{ lookup('ansible.builtin.template', linux_security_baseline_auditd_legacy_rules_template) }}"
+  check_mode: true
+  register: linux_security_baseline_auditd_legacy_rules_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_legacy_rules_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'audit_rules_file'
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
+- name: Verify auditd service is enabled and started
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_auditd_service.name }}"
+    enabled: "{{ linux_security_baseline_auditd_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_auditd_service.state }}"
+  check_mode: true
+  register: linux_security_baseline_auditd_service_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_service_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_service | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_service
+    - auditd_verify
+    - verify

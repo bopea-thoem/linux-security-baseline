@@ -1,0 +1,238 @@
+---
+- name: Set effective cron verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_cron_packages_effective: >-
+      {{
+        linux_security_baseline_cron_packages
+        | default(linux_security_baseline_verify_cron_packages)
+      }}
+    linux_security_baseline_verify_cron_managed_paths_effective: >-
+      {{
+        linux_security_baseline_cron_managed_paths
+        | default(linux_security_baseline_verify_cron_managed_paths)
+      }}
+    linux_security_baseline_verify_cron_allow_files_effective: >-
+      {{
+        linux_security_baseline_cron_allow_files
+        | default(linux_security_baseline_verify_cron_allow_files)
+      }}
+    linux_security_baseline_verify_cron_deny_files_effective: >-
+      {{
+        linux_security_baseline_cron_deny_files
+        | default(linux_security_baseline_verify_cron_deny_files)
+      }}
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Record cron package compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'cron',
+            'control': 'package ' ~ item ~ ' installed',
+            'compliant': item in (ansible_facts.packages | default({})),
+            'expected': 'installed',
+            'actual': (
+              'installed'
+              if item in (ansible_facts.packages | default({}))
+              else 'missing'
+            ),
+            'message': 'Verify cron and at packages are installed.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_cron_packages_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Check cron managed paths
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop: "{{ linux_security_baseline_verify_cron_managed_paths_effective }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_verify_cron_path_stats
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Record cron managed path compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'cron',
+            'control': 'cron path ' ~ item.item.path,
+            'compliant': (
+              item.stat.exists
+              and (
+                item.item.state == 'directory'
+                and item.stat.isdir
+                or item.item.state == 'file'
+                and item.stat.isreg
+              )
+              and item.stat.pw_name == item.item.owner
+              and item.stat.gr_name == item.item.group
+              and item.stat.mode == item.item.mode
+            ),
+            'expected': item.item.state ~ ' '
+                        ~ item.item.owner ~ ':' ~ item.item.group
+                        ~ ' ' ~ item.item.mode,
+            'actual': (
+              'exists=' ~ item.stat.exists
+              ~ ' owner=' ~ (item.stat.pw_name | default('missing'))
+              ~ ':' ~ (item.stat.gr_name | default('missing'))
+              ~ ' mode=' ~ (item.stat.mode | default('missing'))
+            ),
+            'message': 'Verify cron path ownership and permissions.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_cron_path_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Check cron and at allow files
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop: "{{ linux_security_baseline_verify_cron_allow_files_effective }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_verify_cron_allow_stats
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Read cron and at allow files
+  ansible.builtin.slurp:
+    src: "{{ item.path }}"
+  loop: "{{ linux_security_baseline_verify_cron_allow_files_effective }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_verify_cron_allow_slurps
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Record cron and at allow file mode compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'cron',
+            'control': 'allow file ' ~ item.item.path,
+            'compliant': (
+              item.stat.exists
+              and item.stat.pw_name == item.item.owner
+              and item.stat.gr_name == item.item.group
+              and item.stat.mode == item.item.mode
+            ),
+            'expected': item.item.owner ~ ':' ~ item.item.group
+                        ~ ' ' ~ item.item.mode,
+            'actual': (
+              item.stat.pw_name | default('missing')
+            )
+            ~ ':'
+            ~ (
+              item.stat.gr_name | default('missing')
+            )
+            ~ ' '
+            ~ (
+              item.stat.mode | default('missing')
+            ),
+            'message': 'Verify cron and at allow file ownership and permissions.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_cron_allow_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Record cron and at allowed users compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'cron',
+            'control': 'allowed users in ' ~ item.item.path,
+            'compliant': (
+              item.content is defined
+              and (
+                item.item.users
+                | difference((item.content | b64decode).splitlines())
+                | length
+              ) == 0
+            ),
+            'expected': item.item.users | join(','),
+            'actual': (
+              (item.content | default('') | b64decode).splitlines() | join(',')
+            ),
+            'message': 'Verify required users are present in cron and at allow files.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_cron_allow_slurps.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Check cron and at deny files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ linux_security_baseline_verify_cron_deny_files_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  register: linux_security_baseline_verify_cron_deny_stats
+  tags:
+    - baseline
+    - verify
+    - cron
+
+- name: Record cron and at deny file compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'cron',
+            'control': 'deny file absent ' ~ item.item,
+            'compliant': not item.stat.exists,
+            'expected': 'absent',
+            'actual': 'present' if item.stat.exists else 'absent',
+            'message': 'Verify cron and at deny files are absent.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_cron_deny_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags:
+    - baseline
+    - verify
+    - cron

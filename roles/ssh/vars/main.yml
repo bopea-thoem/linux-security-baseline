@@ -1,0 +1,10 @@
+---
+linux_security_baseline_ssh_domain: ssh
+linux_security_baseline_ssh_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_ssh_config_template: sshd-baseline.conf.j2
+linux_security_baseline_ssh_banner_template: issue.net.j2

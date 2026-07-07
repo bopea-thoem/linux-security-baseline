@@ -1,0 +1,2 @@
+---
+# Verification is read-only except for report generation, so no handlers are required.

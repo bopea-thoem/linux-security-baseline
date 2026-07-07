@@ -1,0 +1,53 @@
+## Ansible managed: Linux Security Baseline audit rules.
+
+{% for result in linux_security_baseline_auditd_watch_path_stats.results | default([]) %}
+{% if result.stat.exists %}
+-w {{ result.item.path }} -p {{ result.item.permissions }} -k {{ result.item.key }}
+{% endif %}
+{% endfor %}
+{% for rule in linux_security_baseline_auditd_arch_syscall_rules %}
+{% for arch in linux_security_baseline_auditd_architectures %}
+{% if rule.syscalls_by_arch is defined %}
+{% set syscalls = rule.syscalls_by_arch[arch] | default([]) %}
+{% else %}
+{% set syscalls = rule.syscalls | default([]) %}
+{% endif %}
+{% if syscalls | length > 0 %}
+{% set syscall_args = [] %}
+{% for syscall in syscalls %}
+{% set _ = syscall_args.append('-S ' ~ syscall) %}
+{% endfor %}
+{% set filter_args = [] %}
+{% for filter in rule.filters | default([]) %}
+{% set normalized_filter = filter | replace('1000', linux_security_baseline_auditd_uid_min | string) %}
+{% set normalized_filter = normalized_filter | replace('4294967295', linux_security_baseline_auditd_unset_auid) %}
+{% set _ = filter_args.append('-F ' ~ normalized_filter) %}
+{% endfor %}
+{% set audit_rule = '-a ' ~ rule.action ~ ' -F arch=' ~ arch %}
+{% set audit_rule = audit_rule ~ ' ' ~ (syscall_args | join(' ')) %}
+{% if filter_args | length > 0 %}
+{% set audit_rule = audit_rule ~ ' ' ~ (filter_args | join(' ')) %}
+{% endif %}
+{{ audit_rule }} -k {{ rule.key }}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% set emitted_exec_paths = [] %}
+{% for result in linux_security_baseline_auditd_exec_path_stats.results | default([]) %}
+{% if result.stat.exists %}
+{% set _ = emitted_exec_paths.append(result.item.path) %}
+{% set auid_args = '-F auid>=' ~ linux_security_baseline_auditd_uid_min %}
+{% set auid_args = auid_args ~ ' -F auid!=' ~ linux_security_baseline_auditd_unset_auid %}
+-a always,exit -F path={{ result.item.path }} -F perm=x {{ auid_args }} -k {{ result.item.key }}
+{% endif %}
+{% endfor %}
+{% for result in linux_security_baseline_auditd_discovered_exec_paths.results | default([]) %}
+{% for path in result.stdout_lines | default([]) | sort %}
+{% if path not in emitted_exec_paths %}
+{% set _ = emitted_exec_paths.append(path) %}
+{% set auid_args = '-F auid>=' ~ linux_security_baseline_auditd_uid_min %}
+{% set auid_args = auid_args ~ ' -F auid!=' ~ linux_security_baseline_auditd_unset_auid %}
+-a always,exit -F path={{ path }} -F perm=x {{ auid_args }} -k privileged
+{% endif %}
+{% endfor %}
+{% endfor %}

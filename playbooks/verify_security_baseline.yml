@@ -1,0 +1,49 @@
+---
+- name: Verify Linux Security Baseline
+  hosts: linux_security
+  become: true
+  gather_facts: true
+  any_errors_fatal: false
+
+  pre_tasks:
+    - name: Assert supported Red Hat Enterprise Linux platform
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == linux_security_baseline_target_distribution
+          - >-
+            ansible_facts.distribution_major_version | int
+            in linux_security_baseline_supported_major_versions
+        fail_msg: >-
+          Unsupported platform detected: {{ ansible_facts.distribution }}
+          {{ ansible_facts.distribution_version }}. Supported platforms are RHEL
+          {{ linux_security_baseline_supported_major_versions | join(', ') }}.
+        success_msg: >-
+          Supported platform detected: {{ ansible_facts.distribution }}
+          {{ ansible_facts.distribution_version }}.
+      tags:
+        - always
+        - baseline
+        - verify
+        - version_detection
+
+    - name: Set Linux Security Baseline version facts
+      ansible.builtin.set_fact:
+        linux_security_baseline_os_major_version: "{{ ansible_facts.distribution_major_version | int }}"
+        linux_security_baseline_os_version_key: "{{ ansible_facts.distribution_major_version }}"
+        linux_security_baseline_os_profile: >-
+          {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].label }}
+        linux_security_baseline_package_manager: >-
+          {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].package_manager }}
+        linux_security_baseline_service_manager: >-
+          {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].service_manager }}
+      tags:
+        - always
+        - baseline
+        - verify
+        - version_detection
+
+  roles:
+    - role: verify
+      tags:
+        - baseline
+        - verify

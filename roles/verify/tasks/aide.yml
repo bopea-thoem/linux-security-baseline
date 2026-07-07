@@ -1,0 +1,153 @@
+---
+- name: Set effective AIDE verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_aide_packages_effective: >-
+      {{
+        linux_security_baseline_aide_packages
+        | default(linux_security_baseline_verify_aide_packages)
+      }}
+    linux_security_baseline_verify_aide_database_effective: >-
+      {{
+        linux_security_baseline_aide_database
+        | default(linux_security_baseline_verify_aide_database)
+      }}
+    linux_security_baseline_verify_aide_cron_effective: >-
+      {{
+        linux_security_baseline_aide_cron
+        | default(linux_security_baseline_verify_aide_cron)
+      }}
+  tags:
+    - baseline
+    - verify
+    - aide
+
+- name: Record AIDE package compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'aide',
+            'control': 'package ' ~ item ~ ' installed',
+            'compliant': item in (ansible_facts.packages | default({})),
+            'expected': 'installed',
+            'actual': (
+              'installed'
+              if item in (ansible_facts.packages | default({}))
+              else 'missing'
+            ),
+            'message': 'Verify AIDE package is installed.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_aide_packages_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - aide
+
+- name: Check AIDE database and cron files
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop:
+    - path: "{{ linux_security_baseline_verify_aide_database_effective.path }}"
+      control: AIDE active database
+      mode: "{{ linux_security_baseline_verify_aide_database_effective.mode | default('0600') }}"
+    - path: "{{ linux_security_baseline_verify_aide_cron_effective.path }}"
+      control: AIDE daily cron
+      mode: "{{ linux_security_baseline_verify_aide_cron_effective.mode | default('0644') }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_verify_aide_file_stats
+  tags:
+    - baseline
+    - verify
+    - aide
+
+- name: Record AIDE file compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'aide',
+            'control': item.item.control,
+            'compliant': (
+              item.stat.exists
+              and item.stat.pw_name == 'root'
+              and item.stat.gr_name == 'root'
+              and item.stat.mode == item.item.mode
+            ),
+            'expected': 'present root:root ' ~ item.item.mode,
+            'actual': (
+              item.stat.pw_name | default('missing')
+            )
+            ~ ':'
+            ~ (
+              item.stat.gr_name | default('missing')
+            )
+            ~ ' '
+            ~ (
+              item.stat.mode | default('missing')
+            ),
+            'message': 'Verify AIDE database and cron file ownership and mode.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_aide_file_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  tags:
+    - baseline
+    - verify
+    - aide
+
+- name: Read AIDE cron file
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_aide_cron_effective.path }}"
+  register: linux_security_baseline_verify_aide_cron_slurp
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - aide
+
+- name: Record AIDE daily check compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'aide',
+            'control': 'AIDE daily integrity check scheduled',
+            'compliant': (
+              linux_security_baseline_verify_aide_cron_slurp.content is defined
+              and (
+                linux_security_baseline_verify_aide_cron_effective.command
+                | default('/usr/sbin/aide --check')
+              )
+              in (
+                linux_security_baseline_verify_aide_cron_slurp.content
+                | b64decode
+              )
+            ),
+            'expected': (
+              linux_security_baseline_verify_aide_cron_effective.command
+              | default('/usr/sbin/aide --check')
+            ),
+            'actual': (
+              linux_security_baseline_verify_aide_cron_slurp.content
+              | default('')
+              | b64decode
+              | trim
+            ),
+            'message': 'Verify AIDE daily cron job runs integrity checks.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - aide

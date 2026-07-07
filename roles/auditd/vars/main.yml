@@ -1,0 +1,13 @@
+---
+linux_security_baseline_auditd_domain: auditd
+linux_security_baseline_auditd_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_auditd_config_template: auditd.conf.j2
+linux_security_baseline_auditd_base_rules_template: audit-base.rules.j2
+linux_security_baseline_auditd_main_rules_template: audit-main.rules.j2
+linux_security_baseline_auditd_finalize_rules_template: audit-finalize.rules.j2
+linux_security_baseline_auditd_legacy_rules_template: audit-legacy.rules.j2

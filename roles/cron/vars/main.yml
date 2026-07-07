@@ -1,0 +1,7 @@
+---
+linux_security_baseline_cron_domain: cron
+linux_security_baseline_cron_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10

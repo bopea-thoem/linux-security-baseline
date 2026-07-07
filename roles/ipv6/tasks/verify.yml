@@ -1,0 +1,58 @@
+---
+- name: Build effective IPv6 verification sysctl settings
+  ansible.builtin.set_fact:
+    linux_security_baseline_ipv6_effective_verify_sysctl_settings: >-
+      {{
+        linux_security_baseline_ipv6_sysctl_settings
+        + (
+          linux_security_baseline_ipv6_disable_sysctl_settings
+          if linux_security_baseline_ipv6_disable_ipv6 | bool
+          else []
+        )
+      }}
+  when: linux_security_baseline_ipv6_verify | bool
+  tags:
+    - baseline
+    - ipv6
+    - ipv6_verify
+    - verify
+
+- name: Read IPv6 sysctl values
+  ansible.builtin.command:
+    argv:
+      - sysctl
+      - -n
+      - "{{ item.name }}"
+  loop: "{{ linux_security_baseline_ipv6_effective_verify_sysctl_settings }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: linux_security_baseline_ipv6_sysctl_verify
+  changed_when: false
+  failed_when: false
+  when: linux_security_baseline_ipv6_verify | bool
+  tags:
+    - baseline
+    - ipv6
+    - ipv6_verify
+    - verify
+
+- name: Verify IPv6 sysctl values
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - item.stdout | trim == item.item.value | string
+    fail_msg: >-
+      IPv6 sysctl {{ item.item.name }} expected {{ item.item.value }}
+      but found {{ item.stdout | default(item.stderr) }}.
+    success_msg: "IPv6 sysctl {{ item.item.name }} is compliant."
+  loop: "{{ linux_security_baseline_ipv6_sysctl_verify.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:
+    - linux_security_baseline_ipv6_verify | bool
+    - linux_security_baseline_ipv6_verify_fail_on_drift | bool
+  tags:
+    - baseline
+    - ipv6
+    - ipv6_verify
+    - verify

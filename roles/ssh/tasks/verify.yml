@@ -1,0 +1,171 @@
+---
+- name: Verify OpenSSH server packages are installed
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_ssh_packages }}"
+    state: present
+  check_mode: true
+  register: linux_security_baseline_ssh_package_verify_result
+  failed_when:
+    - linux_security_baseline_ssh_verify_fail_on_drift | bool
+    - linux_security_baseline_ssh_package_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_install | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_package
+    - ssh_verify
+    - verify
+
+- name: Verify SSH configuration directory
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_ssh_paths.config_directory }}"
+    state: directory
+    owner: "{{ linux_security_baseline_ssh_config_directory.owner }}"
+    group: "{{ linux_security_baseline_ssh_config_directory.group }}"
+    mode: "{{ linux_security_baseline_ssh_config_directory.mode }}"
+  check_mode: true
+  register: linux_security_baseline_ssh_config_directory_verify_result
+  failed_when:
+    - linux_security_baseline_ssh_verify_fail_on_drift | bool
+    - linux_security_baseline_ssh_config_directory_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+    - ssh_verify
+    - verify
+
+- name: Verify SSH login banner
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_ssh_banner_template }}"
+    dest: "{{ linux_security_baseline_ssh_paths.banner }}"
+    owner: "{{ linux_security_baseline_ssh_banner.owner }}"
+    group: "{{ linux_security_baseline_ssh_banner.group }}"
+    mode: "{{ linux_security_baseline_ssh_banner.mode }}"
+  check_mode: true
+  register: linux_security_baseline_ssh_banner_verify_result
+  failed_when:
+    - linux_security_baseline_ssh_verify_fail_on_drift | bool
+    - linux_security_baseline_ssh_banner_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_manage_banner | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_banner
+    - ssh_verify
+    - verify
+
+- name: Verify SSH security baseline drop-in
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_ssh_config_template }}"
+    dest: "{{ linux_security_baseline_ssh_paths.baseline_config }}"
+    owner: "{{ linux_security_baseline_ssh_baseline_config.owner }}"
+    group: "{{ linux_security_baseline_ssh_baseline_config.group }}"
+    mode: "{{ linux_security_baseline_ssh_baseline_config.mode }}"
+    validate: "{{ linux_security_baseline_ssh_paths.sshd_binary }} -t -f %s"
+  check_mode: true
+  register: linux_security_baseline_ssh_config_verify_result
+  failed_when:
+    - linux_security_baseline_ssh_verify_fail_on_drift | bool
+    - linux_security_baseline_ssh_config_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+    - ssh_verify
+    - verify
+
+- name: Verify SSH main configuration ownership
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_ssh_paths.main_config }}"
+    state: file
+    owner: "{{ linux_security_baseline_ssh_main_config.owner }}"
+    group: "{{ linux_security_baseline_ssh_main_config.group }}"
+    mode: "{{ linux_security_baseline_ssh_main_config.mode }}"
+  check_mode: true
+  register: linux_security_baseline_ssh_main_config_file_verify_result
+  failed_when:
+    - linux_security_baseline_ssh_verify_fail_on_drift | bool
+    - linux_security_baseline_ssh_main_config_file_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+    - ssh_verify
+    - verify
+
+- name: Verify SSH baseline include is first in sshd_config
+  ansible.builtin.blockinfile:
+    path: "{{ linux_security_baseline_ssh_paths.main_config }}"
+    insertbefore: BOF
+    marker: "{{ linux_security_baseline_ssh_main_config.include_marker }}"
+    block: "{{ linux_security_baseline_ssh_main_config.include_line }}"
+    owner: "{{ linux_security_baseline_ssh_main_config.owner }}"
+    group: "{{ linux_security_baseline_ssh_main_config.group }}"
+    mode: "{{ linux_security_baseline_ssh_main_config.mode }}"
+    validate: "{{ linux_security_baseline_ssh_paths.sshd_binary }} -t -f %s"
+  check_mode: true
+  register: linux_security_baseline_ssh_include_verify_result
+  failed_when:
+    - linux_security_baseline_ssh_verify_fail_on_drift | bool
+    - linux_security_baseline_ssh_include_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+    - ssh_verify
+    - verify
+
+- name: Verify active SSH daemon configuration is valid
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_ssh_paths.sshd_binary }}"
+      - -t
+      - -f
+      - "{{ linux_security_baseline_ssh_paths.main_config }}"
+  changed_when: false
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_manage_config | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_config
+    - ssh_verify
+    - verify
+
+- name: Verify sshd service is enabled and started
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_ssh_service.name }}"
+    enabled: "{{ linux_security_baseline_ssh_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_ssh_service.state }}"
+  check_mode: true
+  register: linux_security_baseline_ssh_service_verify_result
+  failed_when:
+    - linux_security_baseline_ssh_verify_fail_on_drift | bool
+    - linux_security_baseline_ssh_service_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_ssh_verify | bool
+    - linux_security_baseline_ssh_manage_service | bool
+  tags:
+    - baseline
+    - ssh
+    - ssh_service
+    - ssh_verify
+    - verify

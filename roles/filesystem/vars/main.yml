@@ -1,0 +1,12 @@
+---
+linux_security_baseline_filesystem_domain: filesystem
+linux_security_baseline_filesystem_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_filesystem_dev_shm_opts: >-
+  {{ linux_security_baseline_filesystem_dev_shm.opts | join(',') }}
+
+linux_security_baseline_filesystem_modprobe_template: disabled-filesystems.conf.j2

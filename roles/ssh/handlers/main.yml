@@ -1,0 +1,5 @@
+---
+- name: Apply sshd configuration
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_ssh_service.name }}"
+    state: "{{ linux_security_baseline_ssh_service.apply_state_on_config_change }}"

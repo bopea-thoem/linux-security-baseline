@@ -1,0 +1,201 @@
+---
+- name: Set effective login.defs verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_login_defs_file_effective: >-
+      {{
+        linux_security_baseline_login_defs_file
+        | default(linux_security_baseline_verify_login_defs_file)
+      }}
+    linux_security_baseline_verify_login_defs_settings_effective: >-
+      {{
+        linux_security_baseline_login_defs_settings
+        | default(linux_security_baseline_verify_login_defs_settings)
+      }}
+    linux_security_baseline_verify_login_defs_user_update_effective: >-
+      {{
+        linux_security_baseline_login_defs_user_update
+        | default(linux_security_baseline_verify_login_defs_user_update)
+      }}
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Check login.defs file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_verify_login_defs_file_effective.path }}"
+  register: linux_security_baseline_verify_login_defs_stat
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Read login.defs file
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_login_defs_file_effective.path }}"
+  register: linux_security_baseline_verify_login_defs_slurp
+  when: linux_security_baseline_verify_login_defs_stat.stat.exists
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Set login.defs content
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_login_defs_content: >-
+      {{
+        linux_security_baseline_verify_login_defs_slurp.content
+        | default('')
+        | b64decode
+      }}
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Record login.defs file compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'login_defs',
+            'control': 'login.defs ownership and mode',
+            'compliant': (
+              linux_security_baseline_verify_login_defs_stat.stat.exists
+              and linux_security_baseline_verify_login_defs_stat.stat.pw_name
+              == linux_security_baseline_verify_login_defs_file_effective.owner
+              and linux_security_baseline_verify_login_defs_stat.stat.gr_name
+              == linux_security_baseline_verify_login_defs_file_effective.group
+              and linux_security_baseline_verify_login_defs_stat.stat.mode
+              == linux_security_baseline_verify_login_defs_file_effective.mode
+            ),
+            'expected': (
+              linux_security_baseline_verify_login_defs_file_effective.owner
+              ~ ':'
+              ~ linux_security_baseline_verify_login_defs_file_effective.group
+              ~ ' '
+              ~ linux_security_baseline_verify_login_defs_file_effective.mode
+            ),
+            'actual': (
+              linux_security_baseline_verify_login_defs_stat.stat.pw_name
+              | default('missing')
+            )
+            ~ ':'
+            ~ (
+              linux_security_baseline_verify_login_defs_stat.stat.gr_name
+              | default('missing')
+            )
+            ~ ' '
+            ~ (
+              linux_security_baseline_verify_login_defs_stat.stat.mode
+              | default('missing')
+            ),
+            'message': 'Verify login.defs ownership and permissions.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Record login.defs setting compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'login_defs',
+            'control': 'login.defs ' ~ item.key,
+            'compliant': (
+              linux_security_baseline_verify_login_defs_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s+' ~ item.value ~ '\s*$')
+            ) is not none,
+            'expected': item.key ~ ' ' ~ item.value,
+            'actual': (
+              linux_security_baseline_verify_login_defs_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s+.*$')
+              | default('missing', true)
+            ),
+            'message': 'Verify login.defs baseline setting.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_login_defs_settings_effective | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Gather local passwd database for login.defs verification
+  ansible.builtin.getent:
+    database: passwd
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Gather local shadow database for login.defs verification
+  ansible.builtin.getent:
+    database: shadow
+  no_log: true
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Record existing user password aging compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'login_defs',
+            'control': 'password aging for user ' ~ item.key,
+            'compliant': (
+              ansible_facts.getent_shadow[item.key][2] | int
+              == linux_security_baseline_verify_login_defs_settings_effective.PASS_MIN_DAYS | int
+              and ansible_facts.getent_shadow[item.key][3] | int
+              == linux_security_baseline_verify_login_defs_settings_effective.PASS_MAX_DAYS | int
+              and ansible_facts.getent_shadow[item.key][4] | int
+              == linux_security_baseline_verify_login_defs_settings_effective.PASS_WARN_AGE | int
+            ),
+            'expected': (
+              'min='
+              ~ linux_security_baseline_verify_login_defs_settings_effective.PASS_MIN_DAYS
+              ~ ',max='
+              ~ linux_security_baseline_verify_login_defs_settings_effective.PASS_MAX_DAYS
+              ~ ',warn='
+              ~ linux_security_baseline_verify_login_defs_settings_effective.PASS_WARN_AGE
+            ),
+            'actual': (
+              'min='
+              ~ ansible_facts.getent_shadow[item.key][2]
+              ~ ',max='
+              ~ ansible_facts.getent_shadow[item.key][3]
+              ~ ',warn='
+              ~ ansible_facts.getent_shadow[item.key][4]
+            ),
+            'message': 'Verify password aging for local interactive user.'
+          }
+        ]
+      }}
+  loop: "{{ ansible_facts.getent_passwd | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - item.key not in linux_security_baseline_verify_login_defs_user_update_effective.excluded_users
+    - >-
+      item.key == 'root'
+      and linux_security_baseline_verify_login_defs_user_update_effective.include_root | bool
+      or item.value[1] | int
+      >= linux_security_baseline_verify_login_defs_user_update_effective.min_uid | int
+    - item.value[5] not in linux_security_baseline_verify_login_defs_user_update_effective.excluded_shells
+    - item.key in ansible_facts.getent_shadow
+  tags:
+    - baseline
+    - verify
+    - login_defs

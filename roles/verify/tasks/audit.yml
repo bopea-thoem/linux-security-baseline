@@ -1,0 +1,402 @@
+---
+- name: Set effective auditd verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_auditd_packages_effective: >-
+      {{
+        linux_security_baseline_auditd_packages
+        | default(linux_security_baseline_verify_auditd_packages)
+      }}
+    linux_security_baseline_verify_auditd_service_effective: >-
+      {{
+        linux_security_baseline_auditd_service
+        | default(linux_security_baseline_verify_auditd_service)
+      }}
+    linux_security_baseline_verify_auditd_config_effective: >-
+      {{
+        linux_security_baseline_auditd_config
+        | default(linux_security_baseline_verify_auditd_config)
+      }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Set effective audit rule file list
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_auditd_rules_files_effective: >-
+      {{
+        (
+          linux_security_baseline_auditd_rules_files.values()
+          | map(attribute='path')
+          | list
+        )
+        if linux_security_baseline_auditd_rules_files is defined
+        else linux_security_baseline_verify_auditd_rules_files
+      }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record auditd package compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'package ' ~ item ~ ' installed',
+            'compliant': item in (ansible_facts.packages | default({})),
+            'expected': 'installed',
+            'actual': (
+              'installed'
+              if item in (ansible_facts.packages | default({}))
+              else 'missing'
+            ),
+            'message': 'Verify auditd package is installed.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_auditd_packages_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record auditd service compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'service ' ~ linux_security_baseline_verify_auditd_service_effective.name,
+            'compliant': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_auditd_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing') == 'running'
+              and (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_auditd_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing') in ['enabled', 'static']
+            ),
+            'expected': 'running and enabled',
+            'actual': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_auditd_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing')
+              ~ '/'
+              ~ (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_auditd_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing')
+            ),
+            'message': 'Verify auditd service is active and enabled.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Check auditd configuration file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_verify_auditd_config_effective.path }}"
+  register: linux_security_baseline_verify_auditd_config_stat
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Read auditd configuration file
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_auditd_config_effective.path }}"
+  register: linux_security_baseline_verify_auditd_config_slurp
+  when: linux_security_baseline_verify_auditd_config_stat.stat.exists
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Set auditd configuration content
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_auditd_config_content: >-
+      {{
+        linux_security_baseline_verify_auditd_config_slurp.content
+        | default('')
+        | b64decode
+      }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record auditd configuration file compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'auditd.conf ownership and mode',
+            'compliant': (
+              linux_security_baseline_verify_auditd_config_stat.stat.exists
+              and linux_security_baseline_verify_auditd_config_stat.stat.pw_name == 'root'
+              and linux_security_baseline_verify_auditd_config_stat.stat.gr_name == 'root'
+              and linux_security_baseline_verify_auditd_config_stat.stat.mode
+              == (
+                linux_security_baseline_verify_auditd_config_effective.mode
+                | default('0640')
+              )
+            ),
+            'expected': 'root:root ' ~ (
+              linux_security_baseline_verify_auditd_config_effective.mode
+              | default('0640')
+            ),
+            'actual': (
+              linux_security_baseline_verify_auditd_config_stat.stat.pw_name
+              | default('missing')
+            )
+            ~ ':'
+            ~ (
+              linux_security_baseline_verify_auditd_config_stat.stat.gr_name
+              | default('missing')
+            )
+            ~ ' '
+            ~ (
+              linux_security_baseline_verify_auditd_config_stat.stat.mode
+              | default('missing')
+            ),
+            'message': 'Verify auditd.conf file ownership and permissions.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record auditd configuration directive compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'auditd.conf ' ~ item.key,
+            'compliant': (
+              linux_security_baseline_verify_auditd_config_content
+              | regex_search('(?m)^' ~ item.key ~ '\s*=\s*' ~ item.value ~ '$')
+            ) is not none,
+            'expected': item.key ~ ' = ' ~ item.value,
+            'actual': (
+              linux_security_baseline_verify_auditd_config_content
+              | regex_search('(?m)^' ~ item.key ~ '\s*=\s*.*$')
+              | default('missing', true)
+            ),
+            'message': 'Verify auditd.conf baseline directive.'
+          }
+        ]
+      }}
+  loop: >-
+    {{
+      linux_security_baseline_verify_auditd_config
+      | dict2items
+      | rejectattr('key', 'in', ['path', 'mode'])
+      | list
+    }}
+  loop_control:
+    label: "{{ item.key }}"
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Check persistent audit rule files
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ linux_security_baseline_verify_auditd_rules_files_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  register: linux_security_baseline_verify_audit_rule_file_stats
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record persistent audit rule file compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'persistent audit rules file ' ~ item.item,
+            'compliant': (
+              item.stat.exists
+              and item.stat.pw_name == 'root'
+              and item.stat.gr_name == 'root'
+              and item.stat.mode == '0640'
+            ),
+            'expected': 'present root:root 0640',
+            'actual': (
+              item.stat.pw_name | default('missing')
+            )
+            ~ ':'
+            ~ (
+              item.stat.gr_name | default('missing')
+            )
+            ~ ' '
+            ~ (
+              item.stat.mode | default('missing')
+            ),
+            'message': 'Verify managed persistent audit rule file.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_audit_rule_file_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Read persistent audit rule files
+  ansible.builtin.slurp:
+    src: "{{ item.item }}"
+  loop: "{{ linux_security_baseline_verify_audit_rule_file_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: linux_security_baseline_verify_audit_rule_slurps
+  when: item.stat.exists
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Read active audit rules
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_auditd_auditctl_path | default('/sbin/auditctl') }}"
+      - -l
+  register: linux_security_baseline_verify_active_audit_rules
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Set combined audit rule content
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_audit_rules_content: >-
+      {{
+        (
+          linux_security_baseline_verify_audit_rule_slurps.results
+          | default([])
+          | selectattr('content', 'defined')
+          | map(attribute='content')
+          | map('b64decode')
+          | join('\n')
+        )
+        ~ '\n'
+        ~ (linux_security_baseline_verify_active_audit_rules.stdout | default(''))
+      }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record audit control rule compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'audit control rule ' ~ item,
+            'compliant': item in linux_security_baseline_verify_audit_rules_content,
+            'expected': item,
+            'actual': (
+              'present'
+              if item in linux_security_baseline_verify_audit_rules_content
+              else 'missing'
+            ),
+            'message': 'Verify audit control rule is present.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_auditd_required_control_rules }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record audit rule key compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'audit rule key ' ~ item,
+            'compliant': (
+              (
+                linux_security_baseline_verify_audit_rules_content
+                | regex_search('(\-k\s+' ~ item ~ '|key="?'
+                               ~ item ~ '"?)')
+              ) is not none
+            ),
+            'expected': 'audit key ' ~ item,
+            'actual': (
+              'present'
+              if (
+                linux_security_baseline_verify_audit_rules_content
+                | regex_search('(\-k\s+' ~ item ~ '|key="?'
+                               ~ item ~ '"?)')
+              ) is not none
+              else 'missing'
+            ),
+            'message': 'Verify audit rule family is present.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_auditd_required_keys }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd

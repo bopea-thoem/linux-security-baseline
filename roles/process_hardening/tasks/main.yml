@@ -1,0 +1,85 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for process hardening role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - >-
+        ansible_facts.distribution_major_version | int
+        in linux_security_baseline_process_hardening_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for process_hardening role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for process_hardening role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_process_hardening_enabled | bool
+  tags:
+    - always
+    - baseline
+    - process_hardening
+    - process_hardening_verify
+
+- name: Configure limits.conf ownership and permissions
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_process_hardening_limits_file.path }}"
+    state: file
+    owner: "{{ linux_security_baseline_process_hardening_limits_file.owner }}"
+    group: "{{ linux_security_baseline_process_hardening_limits_file.group }}"
+    mode: "{{ linux_security_baseline_process_hardening_limits_file.mode }}"
+  when:
+    - linux_security_baseline_process_hardening_enabled | bool
+    - linux_security_baseline_process_hardening_manage_limits | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_limits
+
+- name: Disable core dumps in limits.conf
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_process_hardening_limits_file.path }}"
+    regexp: "^\\s*{{ item.domain | regex_escape }}\\s+{{ item.limit_type }}\\s+{{ item.limit_item }}\\s+"
+    line: >-
+      {{ item.domain }} {{ item.limit_type }}
+      {{ item.limit_item }} {{ item.value }}
+    owner: "{{ linux_security_baseline_process_hardening_limits_file.owner }}"
+    group: "{{ linux_security_baseline_process_hardening_limits_file.group }}"
+    mode: "{{ linux_security_baseline_process_hardening_limits_file.mode }}"
+    create: false
+  loop: "{{ linux_security_baseline_process_hardening_limits }}"
+  loop_control:
+    label: "{{ item.domain }} {{ item.limit_type }} {{ item.limit_item }}"
+  when:
+    - linux_security_baseline_process_hardening_enabled | bool
+    - linux_security_baseline_process_hardening_manage_limits | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_limits
+
+- name: Configure process hardening sysctl settings
+  ansible.posix.sysctl:
+    name: "{{ item.name }}"
+    value: "{{ item.value }}"
+    sysctl_file: "{{ linux_security_baseline_process_hardening_sysctl_file }}"
+    state: present
+    sysctl_set: true
+    reload: true
+  loop: "{{ linux_security_baseline_process_hardening_sysctl_settings }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - linux_security_baseline_process_hardening_enabled | bool
+    - linux_security_baseline_process_hardening_manage_sysctl | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_sysctl
+
+- name: Import process hardening verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_process_hardening_enabled | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_verify
+    - verify

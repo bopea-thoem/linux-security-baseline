@@ -1,0 +1,8 @@
+---
+- name: Apply authselect changes
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_pam_authselect_path }}"
+      - apply-changes
+  changed_when: true
+  when: linux_security_baseline_pam_os_major | int >= 8

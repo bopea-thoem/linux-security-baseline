@@ -1,0 +1,40 @@
+---
+linux_security_baseline_filesystem_enabled: true
+linux_security_baseline_filesystem_manage_dev_shm: true
+linux_security_baseline_filesystem_disable_modules: true
+linux_security_baseline_filesystem_unload_modules: true
+linux_security_baseline_filesystem_verify: true
+linux_security_baseline_filesystem_verify_fail_on_drift: true
+linux_security_baseline_filesystem_fail_on_module_unload_error: true
+
+linux_security_baseline_filesystem_dev_shm:
+  path: /dev/shm
+  src: tmpfs
+  fstype: tmpfs
+  opts:
+    - defaults
+    - nodev
+    - nosuid
+    - noexec
+  dump: "0"
+  passno: "0"
+  boot: true
+
+linux_security_baseline_filesystem_modprobe_conf:
+  path: /etc/modprobe.d/99-linux-security-baseline-filesystem.conf
+  owner: root
+  group: root
+  mode: "0644"
+
+linux_security_baseline_filesystem_disabled_modules:
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfs
+  - hfsplus
+  - squashfs
+  - udf
+
+linux_security_baseline_filesystem_tags:
+  - baseline
+  - filesystem

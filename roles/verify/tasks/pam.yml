@@ -1,0 +1,454 @@
+---
+- name: Set effective PAM verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_pam_packages_effective: >-
+      {{
+        (
+          linux_security_baseline_pam_packages_by_major
+          | default(linux_security_baseline_verify_pam_packages_by_major)
+        )[ansible_facts.distribution_major_version]
+      }}
+    linux_security_baseline_verify_pam_pwquality_file: >-
+      {{
+        linux_security_baseline_pam_files.pwquality.path
+        | default(linux_security_baseline_verify_pam_files.pwquality)
+      }}
+    linux_security_baseline_verify_pam_faillock_file: >-
+      {{
+        linux_security_baseline_pam_files.faillock.path
+        | default(linux_security_baseline_verify_pam_files.faillock)
+      }}
+    linux_security_baseline_verify_pam_pwhistory_file: >-
+      {{
+        linux_security_baseline_pam_files.pwhistory.path
+        | default(linux_security_baseline_verify_pam_files.pwhistory)
+      }}
+    linux_security_baseline_verify_pam_rhel7_auth_files_effective: >-
+      {{
+        linux_security_baseline_pam_rhel7_auth_files
+        | default(linux_security_baseline_verify_pam_rhel7_auth_files)
+      }}
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Set effective PAM policy values
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_pam_pwquality_effective:
+      minlen: >-
+        {{
+          linux_security_baseline_pam_pwquality.minlen
+          | default(linux_security_baseline_verify_pam_pwquality.minlen)
+        }}
+      dcredit: >-
+        {{
+          linux_security_baseline_pam_pwquality.dcredit
+          | default(linux_security_baseline_verify_pam_pwquality.dcredit)
+        }}
+      ucredit: >-
+        {{
+          linux_security_baseline_pam_pwquality.ucredit
+          | default(linux_security_baseline_verify_pam_pwquality.ucredit)
+        }}
+      lcredit: >-
+        {{
+          linux_security_baseline_pam_pwquality.lcredit
+          | default(linux_security_baseline_verify_pam_pwquality.lcredit)
+        }}
+      ocredit: >-
+        {{
+          linux_security_baseline_pam_pwquality.ocredit
+          | default(linux_security_baseline_verify_pam_pwquality.ocredit)
+        }}
+      difok: >-
+        {{
+          linux_security_baseline_pam_pwquality.difok
+          | default(linux_security_baseline_verify_pam_pwquality.difok)
+        }}
+      maxrepeat: >-
+        {{
+          linux_security_baseline_pam_pwquality.maxrepeat
+          | default(linux_security_baseline_verify_pam_pwquality.maxrepeat)
+        }}
+      maxclassrepeat: >-
+        {{
+          linux_security_baseline_pam_pwquality.maxclassrepeat
+          | default(linux_security_baseline_verify_pam_pwquality.maxclassrepeat)
+        }}
+      dictcheck: >-
+        {{
+          linux_security_baseline_pam_pwquality.dictcheck
+          | default(linux_security_baseline_verify_pam_pwquality.dictcheck)
+        }}
+      usercheck: >-
+        {{
+          linux_security_baseline_pam_pwquality.usercheck
+          | default(linux_security_baseline_verify_pam_pwquality.usercheck)
+        }}
+      enforcing: >-
+        {{
+          linux_security_baseline_pam_pwquality.enforcing
+          | default(linux_security_baseline_verify_pam_pwquality.enforcing)
+        }}
+    linux_security_baseline_verify_pam_faillock_effective:
+      deny: >-
+        {{
+          linux_security_baseline_pam_faillock.deny
+          | default(linux_security_baseline_verify_pam_faillock.deny)
+        }}
+      fail_interval: >-
+        {{
+          linux_security_baseline_pam_faillock.fail_interval
+          | default(linux_security_baseline_verify_pam_faillock.fail_interval)
+        }}
+      unlock_time: >-
+        {{
+          linux_security_baseline_pam_faillock.unlock_time
+          | default(linux_security_baseline_verify_pam_faillock.unlock_time)
+        }}
+    linux_security_baseline_verify_pam_pwhistory_effective:
+      remember: >-
+        {{
+          linux_security_baseline_pam_pwhistory.remember
+          | default(linux_security_baseline_verify_pam_pwhistory.remember)
+        }}
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Record PAM package compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'pam',
+            'control': 'package ' ~ item ~ ' installed',
+            'compliant': item in (ansible_facts.packages | default({})),
+            'expected': 'installed',
+            'actual': (
+              'installed'
+              if item in (ansible_facts.packages | default({}))
+              else 'missing'
+            ),
+            'message': 'Verify PAM baseline packages are installed.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_pam_packages_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Read PAM policy files
+  ansible.builtin.slurp:
+    src: "{{ item.path }}"
+  loop:
+    - name: pwquality
+      path: "{{ linux_security_baseline_verify_pam_pwquality_file }}"
+    - name: faillock
+      path: "{{ linux_security_baseline_verify_pam_faillock_file }}"
+    - name: pwhistory
+      path: "{{ linux_security_baseline_verify_pam_pwhistory_file }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_verify_pam_policy_slurps
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Set PAM policy file contents
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_pam_pwquality_content: >-
+      {{
+        (
+          linux_security_baseline_verify_pam_policy_slurps.results
+          | selectattr('item.name', 'equalto', 'pwquality')
+          | list
+          | first
+        ).content
+        | default('')
+        | b64decode
+      }}
+    linux_security_baseline_verify_pam_faillock_content: >-
+      {{
+        (
+          linux_security_baseline_verify_pam_policy_slurps.results
+          | selectattr('item.name', 'equalto', 'faillock')
+          | list
+          | first
+        ).content
+        | default('')
+        | b64decode
+      }}
+    linux_security_baseline_verify_pam_pwhistory_content: >-
+      {{
+        (
+          linux_security_baseline_verify_pam_policy_slurps.results
+          | selectattr('item.name', 'equalto', 'pwhistory')
+          | list
+          | first
+        ).content
+        | default('')
+        | b64decode
+      }}
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Record pwquality policy compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'pam',
+            'control': 'pwquality ' ~ item.key,
+            'compliant': (
+              linux_security_baseline_verify_pam_pwquality_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s*=\s*'
+                             ~ item.value ~ '\s*$')
+            ) is not none,
+            'expected': item.key ~ ' = ' ~ item.value,
+            'actual': (
+              linux_security_baseline_verify_pam_pwquality_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s*=\s*.*$')
+              | default('missing', true)
+            ),
+            'message': 'Verify password complexity setting.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_pam_pwquality_effective | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Record faillock policy compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'pam',
+            'control': 'faillock ' ~ item.key,
+            'compliant': (
+              linux_security_baseline_verify_pam_faillock_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s*=\s*'
+                             ~ item.value ~ '\s*$')
+            ) is not none,
+            'expected': item.key ~ ' = ' ~ item.value,
+            'actual': (
+              linux_security_baseline_verify_pam_faillock_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s*=\s*.*$')
+              | default('missing', true)
+            ),
+            'message': 'Verify faillock lockout setting.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_pam_faillock_effective | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Record pwhistory policy compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'pam',
+            'control': 'pwhistory ' ~ item.key,
+            'compliant': (
+              linux_security_baseline_verify_pam_pwhistory_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s*=\s*'
+                             ~ item.value ~ '\s*$')
+            ) is not none,
+            'expected': item.key ~ ' = ' ~ item.value,
+            'actual': (
+              linux_security_baseline_verify_pam_pwhistory_content
+              | regex_search('(?m)^\s*' ~ item.key ~ '\s*=\s*.*$')
+              | default('missing', true)
+            ),
+            'message': 'Verify password history setting.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_pam_pwhistory_effective | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Read RHEL 7 authconfig state
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_pam_authconfig_file }}"
+  register: linux_security_baseline_verify_pam_authconfig_slurp
+  failed_when: false
+  when: ansible_facts.distribution_major_version | int == 7
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Read RHEL 7 PAM auth files
+  ansible.builtin.slurp:
+    src: "{{ item }}"
+  loop: "{{ linux_security_baseline_verify_pam_rhel7_auth_files_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  register: linux_security_baseline_verify_pam_rhel7_auth_slurps
+  failed_when: false
+  when: ansible_facts.distribution_major_version | int == 7
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Record RHEL 7 authconfig compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'pam',
+            'control': 'RHEL 7 authconfig SHA512 and faillock',
+            'compliant': (
+              'PASSWDALGORITHM=sha512'
+              in (
+                linux_security_baseline_verify_pam_authconfig_slurp.content
+                | default('')
+                | b64decode
+              )
+              and 'USEFAILLOCK=yes'
+              in (
+                linux_security_baseline_verify_pam_authconfig_slurp.content
+                | default('')
+                | b64decode
+              )
+            ),
+            'expected': 'PASSWDALGORITHM=sha512 and USEFAILLOCK=yes',
+            'actual': (
+              linux_security_baseline_verify_pam_authconfig_slurp.content
+              | default('')
+              | b64decode
+              | regex_search('(?m)^(PASSWDALGORITHM|USEFAILLOCK)=.*$')
+              | default('missing', true)
+            ),
+            'message': 'Verify RHEL 7 authconfig state.'
+          }
+        ]
+      }}
+  when: ansible_facts.distribution_major_version | int == 7
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Record RHEL 7 PAM stack compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'pam',
+            'control': 'RHEL 7 PAM stack ' ~ item.item,
+            'compliant': (
+              'pam_pwquality.so' in (item.content | default('') | b64decode)
+              and 'pam_pwhistory.so' in (item.content | default('') | b64decode)
+              and (
+                (item.content | default('') | b64decode)
+                | regex_search('(?m)^password\s+sufficient\s+pam_unix\.so.*sha512')
+              ) is not none
+            ),
+            'expected': 'pam_pwquality, pam_pwhistory, pam_unix sha512',
+            'actual': 'present' if item.content is defined else 'missing',
+            'message': 'Verify RHEL 7 PAM auth stack modules.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_pam_rhel7_auth_slurps.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  when: ansible_facts.distribution_major_version | int == 7
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Read authselect current profile
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_pam_authselect_path | default(linux_security_baseline_verify_pam_authselect_path) }}"
+      - current
+      - --raw
+  register: linux_security_baseline_verify_pam_authselect_current
+  changed_when: false
+  failed_when: false
+  when: ansible_facts.distribution_major_version | int >= 8
+  tags:
+    - baseline
+    - verify
+    - pam
+
+- name: Record authselect compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'pam',
+            'control': 'authselect baseline profile',
+            'compliant': (
+              linux_security_baseline_verify_pam_authselect_current.rc == 0
+              and (
+                linux_security_baseline_pam_authselect_custom_profile
+                | default(linux_security_baseline_verify_pam_authselect_profile)
+              )
+              in linux_security_baseline_verify_pam_authselect_current.stdout
+              and (
+                linux_security_baseline_verify_pam_authselect_features
+                | difference(
+                  linux_security_baseline_verify_pam_authselect_current.stdout
+                  | split
+                )
+                | length
+              ) == 0
+            ),
+            'expected': (
+              linux_security_baseline_pam_authselect_custom_profile
+              | default(linux_security_baseline_verify_pam_authselect_profile)
+            )
+            ~ ' '
+            ~ (linux_security_baseline_verify_pam_authselect_features | join(' ')),
+            'actual': (
+              linux_security_baseline_verify_pam_authselect_current.stdout
+              | default(linux_security_baseline_verify_pam_authselect_current.stderr)
+              | default('missing')
+            ),
+            'message': 'Verify authselect selected profile and faillock feature.'
+          }
+        ]
+      }}
+  when: ansible_facts.distribution_major_version | int >= 8
+  tags:
+    - baseline
+    - verify
+    - pam

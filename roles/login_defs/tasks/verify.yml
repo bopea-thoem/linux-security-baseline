@@ -1,0 +1,109 @@
+---
+- name: Verify login.defs ownership and permissions
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_login_defs_file.path }}"
+    state: file
+    owner: "{{ linux_security_baseline_login_defs_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_file.mode }}"
+  check_mode: true
+  register: linux_security_baseline_login_defs_file_verify_result
+  failed_when:
+    - linux_security_baseline_login_defs_verify_fail_on_drift | bool
+    - linux_security_baseline_login_defs_file_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_manage_file | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_file
+    - login_defs_verify
+    - verify
+
+- name: Verify login.defs password aging and umask settings
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_login_defs_file.path }}"
+    regexp: "^\\s*{{ item.key }}\\s+"
+    line: "{{ item.key }}\t{{ item.value }}"
+    owner: "{{ linux_security_baseline_login_defs_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_file.mode }}"
+    create: false
+  loop: "{{ linux_security_baseline_login_defs_settings | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  check_mode: true
+  register: linux_security_baseline_login_defs_settings_verify_result
+  failed_when:
+    - linux_security_baseline_login_defs_verify_fail_on_drift | bool
+    - linux_security_baseline_login_defs_settings_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_manage_file | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_file
+    - login_defs_verify
+    - verify
+
+- name: Gather local passwd database for login_defs verification
+  ansible.builtin.getent:
+    database: passwd
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_update_existing_users | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_users
+    - login_defs_verify
+    - verify
+
+- name: Gather local shadow database for login_defs verification
+  ansible.builtin.getent:
+    database: shadow
+  no_log: true
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_update_existing_users | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_users
+    - login_defs_verify
+    - verify
+
+- name: Verify existing local interactive user aging settings
+  ansible.builtin.assert:
+    that:
+      - >-
+        ansible_facts.getent_shadow[item.key][2] | int
+        == linux_security_baseline_login_defs_settings.PASS_MIN_DAYS | int
+      - >-
+        ansible_facts.getent_shadow[item.key][3] | int
+        == linux_security_baseline_login_defs_settings.PASS_MAX_DAYS | int
+      - >-
+        ansible_facts.getent_shadow[item.key][4] | int
+        == linux_security_baseline_login_defs_settings.PASS_WARN_AGE | int
+    fail_msg: "Password aging drift detected for local user {{ item.key }}."
+  loop: "{{ ansible_facts.getent_passwd | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_update_existing_users | bool
+    - item.key not in linux_security_baseline_login_defs_user_update.excluded_users
+    - >-
+      item.key == 'root'
+      and linux_security_baseline_login_defs_user_update.include_root | bool
+      or item.value[1] | int >= linux_security_baseline_login_defs_user_update.min_uid | int
+    - item.value[5] not in linux_security_baseline_login_defs_user_update.excluded_shells
+    - item.key in ansible_facts.getent_shadow
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_users
+    - login_defs_verify
+    - verify

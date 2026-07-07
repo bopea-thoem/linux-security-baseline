@@ -1,0 +1,39 @@
+---
+- name: Verify firewalld packages are installed
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_firewalld_packages }}"
+    state: present
+  check_mode: true
+  register: linux_security_baseline_firewalld_package_verify_result
+  failed_when:
+    - linux_security_baseline_firewalld_verify_fail_on_drift | bool
+    - linux_security_baseline_firewalld_package_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_firewalld_verify | bool
+    - linux_security_baseline_firewalld_install | bool
+  tags:
+    - baseline
+    - firewalld
+    - firewalld_package
+    - firewalld_verify
+    - verify
+
+- name: Verify firewalld service is enabled and started
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_firewalld_service.name }}"
+    enabled: "{{ linux_security_baseline_firewalld_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_firewalld_service.state }}"
+  check_mode: true
+  register: linux_security_baseline_firewalld_service_verify_result
+  failed_when:
+    - linux_security_baseline_firewalld_verify_fail_on_drift | bool
+    - linux_security_baseline_firewalld_service_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_firewalld_verify | bool
+    - linux_security_baseline_firewalld_manage_service | bool
+  tags:
+    - baseline
+    - firewalld
+    - firewalld_service
+    - firewalld_verify
+    - verify

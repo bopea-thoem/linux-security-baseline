@@ -1,0 +1,31 @@
+---
+job_templates:
+  - name: Linux Security Baseline - Apply
+    description: Apply the enterprise Linux Security Baseline.
+    inventory: Linux Security Inventory
+    project: Linux Security Baseline
+    playbook: playbooks/security_baseline.yml
+    credentials:
+      - Linux Privileged Credential
+    execution_environment: Linux Security EE
+    become_enabled: true
+    job_type: run
+    limit: ""
+    verbosity: 1
+    tags: baseline
+
+  - name: Linux Security Baseline - Verify
+    description: Verify compliance and generate reports.
+    inventory: Linux Security Inventory
+    project: Linux Security Baseline
+    playbook: playbooks/verify_security_baseline.yml
+    credentials:
+      - Linux Privileged Credential
+    execution_environment: Linux Security EE
+    become_enabled: true
+    job_type: run
+    limit: ""
+    verbosity: 1
+    tags: verify
+    extra_vars:
+      linux_security_baseline_verify_fail_on_noncompliance: true

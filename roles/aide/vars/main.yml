@@ -1,0 +1,9 @@
+---
+linux_security_baseline_aide_domain: aide
+linux_security_baseline_aide_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_aide_cron_template: aide-cron.j2

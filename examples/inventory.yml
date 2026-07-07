@@ -1,0 +1,13 @@
+---
+all:
+  children:
+    linux_security:
+      hosts:
+        rhel7.example.com:
+          ansible_user: ansible
+        rhel8.example.com:
+          ansible_user: ansible
+        rhel9.example.com:
+          ansible_user: ansible
+        rhel10.example.com:
+          ansible_user: ansible

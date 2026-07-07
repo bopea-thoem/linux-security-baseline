@@ -1,0 +1,14 @@
+---
+- name: Remount /dev/shm
+  ansible.posix.mount:
+    path: "{{ linux_security_baseline_filesystem_dev_shm.path }}"
+    src: "{{ linux_security_baseline_filesystem_dev_shm.src }}"
+    fstype: "{{ linux_security_baseline_filesystem_dev_shm.fstype }}"
+    opts: "{{ linux_security_baseline_filesystem_dev_shm_opts }}"
+    state: remounted
+  listen: remount dev shm
+
+- name: Reload systemd daemon
+  ansible.builtin.systemd:
+    daemon_reload: true
+  listen: reload systemd daemon

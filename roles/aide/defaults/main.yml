@@ -1,0 +1,46 @@
+---
+linux_security_baseline_aide_enabled: true
+linux_security_baseline_aide_install: true
+linux_security_baseline_aide_initialize: true
+linux_security_baseline_aide_configure_daily_check: true
+linux_security_baseline_aide_verify: true
+linux_security_baseline_aide_verify_fail_on_drift: true
+linux_security_baseline_aide_verify_run_integrity_check: false
+linux_security_baseline_aide_verify_integrity_check_fail_on_findings: true
+linux_security_baseline_aide_restart_crond_on_change: false
+
+linux_security_baseline_aide_packages:
+  - aide
+  - cronie
+
+linux_security_baseline_aide_binary: /usr/sbin/aide
+
+linux_security_baseline_aide_database:
+  path: /var/lib/aide/aide.db.gz
+  new_path: /var/lib/aide/aide.db.new.gz
+  owner: root
+  group: root
+  mode: "0600"
+  directory_mode: "0700"
+
+linux_security_baseline_aide_cron:
+  path: /etc/cron.d/linux-security-baseline-aide
+  owner: root
+  group: root
+  mode: "0644"
+  minute: "05"
+  hour: "03"
+  day: "*"
+  month: "*"
+  weekday: "*"
+  user: root
+  mailto: root
+  shell: /bin/bash
+  path_env: /sbin:/bin:/usr/sbin:/usr/bin
+  command: /usr/sbin/aide --check
+
+linux_security_baseline_aide_crond_service: crond
+
+linux_security_baseline_aide_tags:
+  - baseline
+  - aide

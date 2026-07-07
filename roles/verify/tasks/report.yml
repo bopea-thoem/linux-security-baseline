@@ -1,0 +1,102 @@
+---
+- name: Compute compliance report summary
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_noncompliant_results: >-
+      {{
+        linux_security_baseline_verify_results
+        | selectattr('compliant', 'equalto', false)
+        | list
+      }}
+    linux_security_baseline_verify_compliant_results: >-
+      {{
+        linux_security_baseline_verify_results
+        | selectattr('compliant', 'equalto', true)
+        | list
+      }}
+  tags:
+    - always
+    - verify
+    - report
+
+- name: Compute compliance report counts
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_total_count: >-
+      {{ linux_security_baseline_verify_results | length }}
+    linux_security_baseline_verify_compliant_count: >-
+      {{ linux_security_baseline_verify_compliant_results | length }}
+    linux_security_baseline_verify_noncompliant_count: >-
+      {{ linux_security_baseline_verify_noncompliant_results | length }}
+  tags:
+    - always
+    - verify
+    - report
+
+- name: Ensure compliance report directory exists
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_verify_report_dir }}"
+    state: directory
+    owner: "{{ linux_security_baseline_verify_report_owner }}"
+    group: "{{ linux_security_baseline_verify_report_group }}"
+    mode: "0750"
+  tags:
+    - always
+    - verify
+    - report
+
+- name: Write compliance report JSON
+  ansible.builtin.copy:
+    dest: "{{ linux_security_baseline_verify_report_json }}"
+    owner: "{{ linux_security_baseline_verify_report_owner }}"
+    group: "{{ linux_security_baseline_verify_report_group }}"
+    mode: "{{ linux_security_baseline_verify_report_mode }}"
+    content: |
+      {{
+        {
+          'host': inventory_hostname,
+          'distribution': ansible_facts.distribution,
+          'distribution_version': ansible_facts.distribution_version,
+          'generated_at': linux_security_baseline_verify_generated_at,
+          'profile': linux_security_baseline_profile | default('enterprise'),
+          'summary': {
+            'total': linux_security_baseline_verify_total_count | int,
+            'compliant': linux_security_baseline_verify_compliant_count | int,
+            'noncompliant': linux_security_baseline_verify_noncompliant_count | int
+          },
+          'results': linux_security_baseline_verify_results
+        } | to_nice_json
+      }}
+  tags:
+    - always
+    - verify
+    - report
+
+- name: Write compliance report Markdown
+  ansible.builtin.template:
+    src: compliance_report.md.j2
+    dest: "{{ linux_security_baseline_verify_report_markdown }}"
+    owner: "{{ linux_security_baseline_verify_report_owner }}"
+    group: "{{ linux_security_baseline_verify_report_group }}"
+    mode: "{{ linux_security_baseline_verify_report_mode }}"
+  tags:
+    - always
+    - verify
+    - report
+
+- name: Fail when any security control is non-compliant
+  ansible.builtin.assert:
+    that:
+      - linux_security_baseline_verify_noncompliant_count | int == 0
+    fail_msg: >-
+      Linux Security Baseline verification failed on {{ inventory_hostname }}.
+      {{ linux_security_baseline_verify_noncompliant_count }} of
+      {{ linux_security_baseline_verify_total_count }} controls are not compliant.
+      Review {{ linux_security_baseline_verify_report_json }} or
+      {{ linux_security_baseline_verify_report_markdown }} on the target host.
+    success_msg: >-
+      Linux Security Baseline verification passed on {{ inventory_hostname }}.
+      {{ linux_security_baseline_verify_total_count }} controls are compliant.
+  when: linux_security_baseline_verify_fail_on_noncompliance | bool
+  tags:
+    - always
+    - verify
+    - report

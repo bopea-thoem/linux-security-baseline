@@ -1,0 +1,9 @@
+---
+linux_security_baseline_rsyslog_domain: rsyslog
+linux_security_baseline_rsyslog_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_rsyslog_main_config_template: rsyslog.conf.j2

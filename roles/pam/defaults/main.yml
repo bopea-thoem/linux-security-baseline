@@ -1,0 +1,90 @@
+---
+linux_security_baseline_pam_enabled: true
+linux_security_baseline_pam_install: true
+linux_security_baseline_pam_manage_pwquality: true
+linux_security_baseline_pam_manage_faillock: true
+linux_security_baseline_pam_manage_pwhistory: true
+linux_security_baseline_pam_manage_auth_stack: true
+linux_security_baseline_pam_verify: true
+linux_security_baseline_pam_verify_fail_on_drift: true
+
+linux_security_baseline_pam_packages_by_major:
+  "7":
+    - authconfig
+    - pam
+    - libpwquality
+  "8":
+    - authselect
+    - pam
+    - libpwquality
+  "9":
+    - authselect
+    - pam
+    - libpwquality
+  "10":
+    - authselect
+    - pam
+    - libpwquality
+
+linux_security_baseline_pam_authconfig_path: /usr/sbin/authconfig
+linux_security_baseline_pam_authselect_path: /usr/bin/authselect
+
+linux_security_baseline_pam_authselect:
+  custom_profile_name: linux-security-baseline
+  default_base_profile: sssd
+  force_select: false
+  required_features:
+    - with-faillock
+
+linux_security_baseline_pam_files:
+  pwquality:
+    path: /etc/security/pwquality.conf
+    owner: root
+    group: root
+    mode: "0644"
+  faillock:
+    path: /etc/security/faillock.conf
+    owner: root
+    group: root
+    mode: "0644"
+  pwhistory:
+    path: /etc/security/pwhistory.conf
+    owner: root
+    group: root
+    mode: "0644"
+
+linux_security_baseline_pam_rhel7_auth_files:
+  - /etc/pam.d/system-auth-ac
+  - /etc/pam.d/password-auth-ac
+
+linux_security_baseline_pam_pwquality:
+  minlen: 14
+  dcredit: -1
+  ucredit: -1
+  lcredit: -1
+  ocredit: -1
+  difok: 4
+  maxrepeat: 3
+  maxclassrepeat: 4
+  dictcheck: 1
+  usercheck: 1
+  enforcing: 1
+
+linux_security_baseline_pam_faillock:
+  deny: 5
+  fail_interval: 900
+  unlock_time: 900
+  even_deny_root: false
+  root_unlock_time: 60
+
+linux_security_baseline_pam_pwhistory:
+  remember: 5
+  enforce_for_root: true
+
+linux_security_baseline_pam_password:
+  algorithm: sha512
+  pwquality_retry: 3
+
+linux_security_baseline_pam_tags:
+  - baseline
+  - pam

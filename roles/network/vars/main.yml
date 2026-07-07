@@ -1,0 +1,7 @@
+---
+linux_security_baseline_network_domain: network
+linux_security_baseline_network_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10

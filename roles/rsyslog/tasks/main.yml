@@ -1,0 +1,83 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for rsyslog role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_rsyslog_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for rsyslog role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for rsyslog role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_rsyslog_enabled | bool
+  tags:
+    - always
+    - baseline
+    - rsyslog
+    - rsyslog_verify
+
+- name: Install rsyslog packages
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_rsyslog_packages }}"
+    state: present
+  when:
+    - linux_security_baseline_rsyslog_enabled | bool
+    - linux_security_baseline_rsyslog_install | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_package
+
+- name: Ensure rsyslog drop-in directory exists
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_rsyslog_dropin_directory.path }}"
+    state: directory
+    owner: "{{ linux_security_baseline_rsyslog_dropin_directory.owner }}"
+    group: "{{ linux_security_baseline_rsyslog_dropin_directory.group }}"
+    mode: "{{ linux_security_baseline_rsyslog_dropin_directory.mode }}"
+  when:
+    - linux_security_baseline_rsyslog_enabled | bool
+    - linux_security_baseline_rsyslog_manage_dropin_directory | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_config
+
+- name: Configure rsyslog main configuration
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_rsyslog_main_config_template }}"
+    dest: "{{ linux_security_baseline_rsyslog_main_config.path }}"
+    owner: "{{ linux_security_baseline_rsyslog_main_config.owner }}"
+    group: "{{ linux_security_baseline_rsyslog_main_config.group }}"
+    mode: "{{ linux_security_baseline_rsyslog_main_config.mode }}"
+  notify: Restart rsyslog
+  when:
+    - linux_security_baseline_rsyslog_enabled | bool
+    - linux_security_baseline_rsyslog_manage_main_config | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_config
+
+- name: Enable and start rsyslog service
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_rsyslog_service.name }}"
+    enabled: "{{ linux_security_baseline_rsyslog_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_rsyslog_service.state }}"
+  when:
+    - linux_security_baseline_rsyslog_enabled | bool
+    - linux_security_baseline_rsyslog_manage_service | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_service
+
+- name: Import rsyslog verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_rsyslog_enabled | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_verify
+    - verify

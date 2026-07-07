@@ -1,0 +1,7 @@
+{% include linux_security_baseline_auditd_base_rules_template %}
+
+{% include linux_security_baseline_auditd_main_rules_template %}
+{% if linux_security_baseline_auditd_rules_immutable | bool %}
+
+{% include linux_security_baseline_auditd_finalize_rules_template %}
+{% endif %}

@@ -1,0 +1,40 @@
+---
+- name: Read IPv4 network sysctl values
+  ansible.builtin.command:
+    argv:
+      - sysctl
+      - -n
+      - "{{ item.name }}"
+  loop: "{{ linux_security_baseline_network_ipv4_sysctl_settings }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: linux_security_baseline_network_sysctl_verify
+  changed_when: false
+  failed_when: false
+  when: linux_security_baseline_network_verify | bool
+  tags:
+    - baseline
+    - network
+    - network_verify
+    - verify
+
+- name: Verify IPv4 network sysctl values
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - item.stdout | trim == item.item.value | string
+    fail_msg: >-
+      Network sysctl {{ item.item.name }} expected {{ item.item.value }}
+      but found {{ item.stdout | default(item.stderr) }}.
+    success_msg: "Network sysctl {{ item.item.name }} is compliant."
+  loop: "{{ linux_security_baseline_network_sysctl_verify.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:
+    - linux_security_baseline_network_verify | bool
+    - linux_security_baseline_network_verify_fail_on_drift | bool
+  tags:
+    - baseline
+    - network
+    - network_verify
+    - verify

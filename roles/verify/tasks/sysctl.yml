@@ -1,0 +1,73 @@
+---
+- name: Build effective sysctl verification list
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_sysctl_controls_effective: >-
+      {{
+        linux_security_baseline_verify_sysctl_controls
+        + (
+          linux_security_baseline_verify_ipv6_disable_controls
+          if (
+            linux_security_baseline_ipv6_disable_ipv6
+            | default(linux_security_baseline_verify_ipv6_disable_enabled)
+          ) | bool
+          else []
+        )
+      }}
+  tags:
+    - baseline
+    - verify
+    - process_hardening
+    - network
+    - ipv6
+    - sysctl
+
+- name: Read sysctl values
+  ansible.builtin.command:
+    argv:
+      - sysctl
+      - -n
+      - "{{ item.name }}"
+  loop: "{{ linux_security_baseline_verify_sysctl_controls_effective }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: linux_security_baseline_verify_sysctl_reads
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - process_hardening
+    - network
+    - ipv6
+    - sysctl
+
+- name: Record sysctl compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': item.item.domain,
+            'control': 'sysctl ' ~ item.item.name,
+            'compliant': (
+              item.rc == 0
+              and (item.stdout | trim) == (item.item.expected | string)
+            ),
+            'expected': item.item.expected | string,
+            'actual': (
+              item.stdout | default(item.stderr | default('missing')) | trim
+            ),
+            'message': 'Verify active sysctl runtime value.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_sysctl_reads.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  tags:
+    - baseline
+    - verify
+    - process_hardening
+    - network
+    - ipv6
+    - sysctl

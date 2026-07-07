@@ -1,0 +1,9 @@
+---
+linux_security_baseline_gpg_domain: gpg
+linux_security_baseline_gpg_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_gpg_redhat_release_key_reference_url: https://access.redhat.com/security/team/key

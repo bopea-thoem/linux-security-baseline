@@ -1,0 +1,430 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for PAM role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_pam_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for pam role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for pam role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_pam_enabled | bool
+  tags:
+    - always
+    - baseline
+    - pam
+    - pam_verify
+
+- name: Set PAM platform facts
+  ansible.builtin.set_fact:
+    linux_security_baseline_pam_os_major: "{{ ansible_facts.distribution_major_version }}"
+    linux_security_baseline_pam_packages: >-
+      {{
+        linux_security_baseline_pam_packages_by_major[
+          ansible_facts.distribution_major_version
+        ]
+      }}
+    linux_security_baseline_pam_pwhistory_module_args: >-
+      remember={{ linux_security_baseline_pam_pwhistory.remember }}
+      use_authtok
+      {{
+        'enforce_for_root'
+        if linux_security_baseline_pam_pwhistory.enforce_for_root | bool
+        else ''
+      }}
+    linux_security_baseline_pam_faillock_args: >-
+      deny={{ linux_security_baseline_pam_faillock.deny }}
+      fail_interval={{ linux_security_baseline_pam_faillock.fail_interval }}
+      unlock_time={{ linux_security_baseline_pam_faillock.unlock_time }}
+      {{
+        'even_deny_root root_unlock_time='
+        ~ linux_security_baseline_pam_faillock.root_unlock_time | string
+        if linux_security_baseline_pam_faillock.even_deny_root | bool
+        else ''
+      }}
+  when: linux_security_baseline_pam_enabled | bool
+  tags:
+    - always
+    - baseline
+    - pam
+
+- name: Install PAM baseline packages
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_pam_packages }}"
+    state: present
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_install | bool
+  tags:
+    - baseline
+    - pam
+    - pam_package
+
+- name: Configure password complexity policy
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_pam_pwquality_template }}"
+    dest: "{{ linux_security_baseline_pam_files.pwquality.path }}"
+    owner: "{{ linux_security_baseline_pam_files.pwquality.owner }}"
+    group: "{{ linux_security_baseline_pam_files.pwquality.group }}"
+    mode: "{{ linux_security_baseline_pam_files.pwquality.mode }}"
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_pwquality | bool
+  tags:
+    - baseline
+    - pam
+    - pam_pwquality
+
+- name: Configure faillock policy
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_pam_faillock_template }}"
+    dest: "{{ linux_security_baseline_pam_files.faillock.path }}"
+    owner: "{{ linux_security_baseline_pam_files.faillock.owner }}"
+    group: "{{ linux_security_baseline_pam_files.faillock.group }}"
+    mode: "{{ linux_security_baseline_pam_files.faillock.mode }}"
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_faillock | bool
+  tags:
+    - baseline
+    - pam
+    - pam_faillock
+
+- name: Configure password history policy
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_pam_pwhistory_template }}"
+    dest: "{{ linux_security_baseline_pam_files.pwhistory.path }}"
+    owner: "{{ linux_security_baseline_pam_files.pwhistory.owner }}"
+    group: "{{ linux_security_baseline_pam_files.pwhistory.group }}"
+    mode: "{{ linux_security_baseline_pam_files.pwhistory.mode }}"
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_pwhistory | bool
+  tags:
+    - baseline
+    - pam
+    - pam_pwhistory
+
+- name: Read RHEL 7 authconfig state
+  ansible.builtin.slurp:
+    src: /etc/sysconfig/authconfig
+  register: linux_security_baseline_pam_rhel7_authconfig_state
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_authconfig
+
+- name: Configure RHEL 7 PAM stack with authconfig
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_pam_authconfig_path }}"
+      - "--passalgo={{ linux_security_baseline_pam_password.algorithm }}"
+      - --enablefaillock
+      - "--faillockargs={{ linux_security_baseline_pam_faillock_args | trim }}"
+      - --update
+  register: linux_security_baseline_pam_authconfig_result
+  changed_when: linux_security_baseline_pam_authconfig_result.rc == 0
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+    - >-
+      'PASSWDALGORITHM=' ~ linux_security_baseline_pam_password.algorithm
+      not in (
+        linux_security_baseline_pam_rhel7_authconfig_state.content
+        | b64decode
+      )
+      or 'USEFAILLOCK=yes'
+      not in (
+        linux_security_baseline_pam_rhel7_authconfig_state.content
+        | b64decode
+      )
+      or linux_security_baseline_pam_faillock_args | trim
+      not in (
+        linux_security_baseline_pam_rhel7_authconfig_state.content
+        | b64decode
+      )
+  tags:
+    - baseline
+    - pam
+    - pam_authconfig
+
+- name: Configure RHEL 7 pam_pwquality stack entries
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^password\s+requisite\s+pam_pwquality\.so\b.*'
+    line: >-
+      password    requisite     pam_pwquality.so
+      try_first_pass local_users_only
+      retry={{ linux_security_baseline_pam_password.pwquality_retry }}
+      authtok_type=
+  loop: "{{ linux_security_baseline_pam_rhel7_auth_files }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwquality | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_pwquality
+
+- name: Configure RHEL 7 password history stack entries
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^password\s+required\s+pam_pwhistory\.so\b.*'
+    line: >-
+      password    required      pam_pwhistory.so
+      {{ linux_security_baseline_pam_pwhistory_module_args | trim }}
+    insertbefore: '^password\s+sufficient\s+pam_unix\.so\b.*'
+  loop: "{{ linux_security_baseline_pam_rhel7_auth_files }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwhistory | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_pwhistory
+
+- name: Configure RHEL 7 pam_unix SHA512 stack entries
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^password\s+sufficient\s+pam_unix\.so\b.*'
+    line: >-
+      password    sufficient    pam_unix.so
+      {{ linux_security_baseline_pam_password.algorithm }}
+      shadow nullok try_first_pass use_authtok
+  loop: "{{ linux_security_baseline_pam_rhel7_auth_files }}"
+  loop_control:
+    label: "{{ item }}"
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_sha512
+
+- name: Read current authselect profile
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_pam_authselect_path }}"
+      - current
+      - --raw
+  register: linux_security_baseline_pam_authselect_current
+  changed_when: false
+  failed_when: false
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+
+- name: Set authselect profile facts
+  ansible.builtin.set_fact:
+    linux_security_baseline_pam_authselect_current_tokens: >-
+      {{
+        linux_security_baseline_pam_authselect_current.stdout
+        | default('')
+        | split
+      }}
+    linux_security_baseline_pam_authselect_current_profile: >-
+      {{
+        (
+          linux_security_baseline_pam_authselect_current.stdout
+          | default('')
+          | split
+          | first
+          | default('')
+        )
+      }}
+    linux_security_baseline_pam_authselect_base_profile: >-
+      {{
+        (
+          linux_security_baseline_pam_authselect_current.stdout
+          | default('')
+          | split
+          | first
+          | default('')
+        )
+        if (
+          linux_security_baseline_pam_authselect_current.stdout
+          | default('')
+          | split
+          | first
+          | default('')
+        ) != ''
+        and not (
+          linux_security_baseline_pam_authselect_current.stdout
+          | default('')
+          | split
+          | first
+          | default('')
+        ).startswith('custom/')
+        else linux_security_baseline_pam_authselect.default_base_profile
+      }}
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+
+- name: Create Linux Security Baseline authselect profile
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_pam_authselect_path }}"
+      - create-profile
+      - "{{ linux_security_baseline_pam_authselect.custom_profile_name }}"
+      - -b
+      - "{{ linux_security_baseline_pam_authselect_base_profile }}"
+      - --symlink-meta
+  args:
+    creates: "{{ linux_security_baseline_pam_authselect_custom_profile_path }}"
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+
+- name: Configure authselect pam_pwquality profile entries
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_pam_authselect_custom_profile_path }}/{{ item }}"
+    regexp: '^password\s+requisite\s+pam_pwquality\.so\b.*'
+    line: >-
+      password    requisite     pam_pwquality.so
+      local_users_only
+      retry={{ linux_security_baseline_pam_password.pwquality_retry }}
+    insertbefore: '^password\s+sufficient\s+pam_unix\.so\b.*'
+  loop:
+    - system-auth
+    - password-auth
+  loop_control:
+    label: "{{ item }}"
+  notify: Apply authselect changes
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwquality | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+    - pam_pwquality
+
+- name: Configure authselect password history profile entries
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_pam_authselect_custom_profile_path }}/{{ item }}"
+    regexp: '^password\s+required\s+pam_pwhistory\.so\b.*'
+    line: >-
+      password    required      pam_pwhistory.so
+      {{ linux_security_baseline_pam_pwhistory_module_args | trim }}
+    insertbefore: '^password\s+sufficient\s+pam_unix\.so\b.*'
+  loop:
+    - system-auth
+    - password-auth
+  loop_control:
+    label: "{{ item }}"
+  notify: Apply authselect changes
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwhistory | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+    - pam_pwhistory
+
+- name: Configure authselect pam_unix SHA512 profile entries
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_pam_authselect_custom_profile_path }}/{{ item }}"
+    regexp: '^password\s+sufficient\s+pam_unix\.so\b.*'
+    line: >-
+      password    sufficient    pam_unix.so
+      {{ linux_security_baseline_pam_password.algorithm }}
+      shadow nullok use_authtok
+  loop:
+    - system-auth
+    - password-auth
+  loop_control:
+    label: "{{ item }}"
+  notify: Apply authselect changes
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+    - pam_sha512
+
+- name: Select Linux Security Baseline authselect profile
+  ansible.builtin.command:
+    cmd: >-
+      {{ linux_security_baseline_pam_authselect_path }} select
+      {{ linux_security_baseline_pam_authselect_custom_profile }}
+      {{ linux_security_baseline_pam_authselect.required_features | join(' ') }}
+      {{
+        '--force'
+        if linux_security_baseline_pam_authselect.force_select | bool
+        else ''
+      }}
+  register: linux_security_baseline_pam_authselect_select_result
+  changed_when: linux_security_baseline_pam_authselect_select_result.rc == 0
+  when:
+    - linux_security_baseline_pam_enabled | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+    - >-
+      linux_security_baseline_pam_authselect_custom_profile
+      not in linux_security_baseline_pam_authselect_current_tokens
+      or (
+        linux_security_baseline_pam_authselect.required_features
+        | difference(linux_security_baseline_pam_authselect_current_tokens)
+        | length
+      ) > 0
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+
+- name: Apply pending PAM handlers before verification
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - baseline
+    - pam
+    - pam_verify
+
+- name: Import PAM verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_pam_enabled | bool
+  tags:
+    - baseline
+    - pam
+    - pam_verify
+    - verify

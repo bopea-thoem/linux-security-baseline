@@ -1,0 +1,28 @@
+---
+linux_security_baseline_ipv6_enabled: true
+linux_security_baseline_ipv6_manage_sysctl: true
+linux_security_baseline_ipv6_verify: true
+linux_security_baseline_ipv6_verify_fail_on_drift: true
+linux_security_baseline_ipv6_disable_ipv6: false
+linux_security_baseline_ipv6_sysctl_file: >-
+  /etc/sysctl.d/99-linux-security-baseline-ipv6.conf
+
+linux_security_baseline_ipv6_sysctl_settings:
+  - name: net.ipv6.conf.all.accept_ra
+    value: "0"
+  - name: net.ipv6.conf.default.accept_ra
+    value: "0"
+  - name: net.ipv6.conf.all.accept_redirects
+    value: "0"
+  - name: net.ipv6.conf.default.accept_redirects
+    value: "0"
+
+linux_security_baseline_ipv6_disable_sysctl_settings:
+  - name: net.ipv6.conf.all.disable_ipv6
+    value: "1"
+  - name: net.ipv6.conf.default.disable_ipv6
+    value: "1"
+
+linux_security_baseline_ipv6_tags:
+  - baseline
+  - ipv6

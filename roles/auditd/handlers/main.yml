@@ -1,0 +1,44 @@
+---
+- name: Reload auditd configuration
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_auditd_service.name }}"
+    state: reloaded
+
+- name: Load audit rules with augenrules
+  ansible.builtin.command:
+    cmd: "{{ linux_security_baseline_auditd_augenrules_path }} --load"
+  changed_when: true
+  listen: Load audit rules
+  when:
+    - linux_security_baseline_auditd_reload_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+    - >-
+      not linux_security_baseline_auditd_rules_immutable | bool
+      or linux_security_baseline_auditd_reload_when_immutable | bool
+
+- name: Load audit rules with auditctl
+  ansible.builtin.command:
+    cmd: >-
+      {{ linux_security_baseline_auditd_auditctl_path }}
+      -R {{ linux_security_baseline_auditd_legacy_rules_file.path }}
+  changed_when: true
+  listen: Load audit rules
+  when:
+    - linux_security_baseline_auditd_reload_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'audit_rules_file'
+    - >-
+      not linux_security_baseline_auditd_rules_immutable | bool
+      or linux_security_baseline_auditd_reload_when_immutable | bool
+
+- name: Report audit rules require reboot because immutable mode is enabled
+  ansible.builtin.debug:
+    msg: >-
+      Audit rules were updated, but live reload was skipped because immutable
+      audit mode is enabled. Reboot the host to load the updated immutable
+      rules, or set linux_security_baseline_auditd_reload_when_immutable=true
+      during a controlled maintenance window.
+  listen: Load audit rules
+  when:
+    - linux_security_baseline_auditd_reload_rules | bool
+    - linux_security_baseline_auditd_rules_immutable | bool
+    - not linux_security_baseline_auditd_reload_when_immutable | bool

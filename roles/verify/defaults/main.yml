@@ -1,0 +1,354 @@
+---
+linux_security_baseline_verify_enabled: true
+linux_security_baseline_verify_fail_on_noncompliance: true
+linux_security_baseline_verify_include_timestamp: false
+linux_security_baseline_verify_report_dir: /var/tmp/linux-security-baseline
+linux_security_baseline_verify_report_json: >-
+  {{ linux_security_baseline_verify_report_dir }}/compliance_report.json
+linux_security_baseline_verify_report_markdown: >-
+  {{ linux_security_baseline_verify_report_dir }}/compliance_report.md
+linux_security_baseline_verify_report_owner: root
+linux_security_baseline_verify_report_group: root
+linux_security_baseline_verify_report_mode: "0640"
+
+linux_security_baseline_verify_filesystem_dev_shm:
+  path: /dev/shm
+  opts:
+    - defaults
+    - nodev
+    - nosuid
+    - noexec
+
+linux_security_baseline_verify_filesystem_modprobe_conf:
+  path: /etc/modprobe.d/99-linux-security-baseline-filesystem.conf
+
+linux_security_baseline_verify_disabled_kernel_modules:
+  - cramfs
+  - freevxfs
+  - jffs2
+  - hfs
+  - hfsplus
+  - squashfs
+  - udf
+
+linux_security_baseline_verify_sysctl_controls:
+  - domain: process_hardening
+    name: fs.suid_dumpable
+    expected: "0"
+  - domain: network
+    name: net.ipv4.ip_forward
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.all.send_redirects
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.default.send_redirects
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.all.accept_source_route
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.default.accept_source_route
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.all.accept_redirects
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.default.accept_redirects
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.all.secure_redirects
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.default.secure_redirects
+    expected: "0"
+  - domain: network
+    name: net.ipv4.conf.all.log_martians
+    expected: "1"
+  - domain: network
+    name: net.ipv4.conf.default.log_martians
+    expected: "1"
+  - domain: network
+    name: net.ipv4.icmp_echo_ignore_broadcasts
+    expected: "1"
+  - domain: network
+    name: net.ipv4.icmp_ignore_bogus_error_responses
+    expected: "1"
+  - domain: network
+    name: net.ipv4.conf.all.rp_filter
+    expected: "1"
+  - domain: network
+    name: net.ipv4.conf.default.rp_filter
+    expected: "1"
+  - domain: network
+    name: net.ipv4.tcp_syncookies
+    expected: "1"
+  - domain: ipv6
+    name: net.ipv6.conf.all.accept_ra
+    expected: "0"
+  - domain: ipv6
+    name: net.ipv6.conf.default.accept_ra
+    expected: "0"
+  - domain: ipv6
+    name: net.ipv6.conf.all.accept_redirects
+    expected: "0"
+  - domain: ipv6
+    name: net.ipv6.conf.default.accept_redirects
+    expected: "0"
+
+linux_security_baseline_verify_ipv6_disable_enabled: false
+linux_security_baseline_verify_ipv6_disable_controls:
+  - domain: ipv6
+    name: net.ipv6.conf.all.disable_ipv6
+    expected: "1"
+  - domain: ipv6
+    name: net.ipv6.conf.default.disable_ipv6
+    expected: "1"
+
+linux_security_baseline_verify_auditd_packages:
+  - audit
+linux_security_baseline_verify_auditd_service:
+  name: auditd
+  state: running
+  enabled: true
+linux_security_baseline_verify_auditd_config:
+  path: /etc/audit/auditd.conf
+  mode: "0640"
+  log_file: /var/log/audit/audit.log
+  log_format: RAW
+  max_log_file_action: keep_logs
+  space_left_action: SYSLOG
+  admin_space_left_action: SUSPEND
+  disk_full_action: SUSPEND
+  disk_error_action: SUSPEND
+linux_security_baseline_verify_auditd_rules_files:
+  - /etc/audit/rules.d/10-linux-security-baseline-base.rules
+  - /etc/audit/rules.d/30-linux-security-baseline.rules
+linux_security_baseline_verify_auditd_required_control_rules:
+  - "-b 8192"
+  - "-f 1"
+  - "-r 0"
+  - "--backlog_wait_time 60000"
+linux_security_baseline_verify_auditd_required_keys:
+  - time-change
+  - identity
+  - auditconfig
+  - auditlog
+  - kernel_modules
+  - perm_mod
+  - access
+  - mounts
+  - delete
+  - privileged
+
+linux_security_baseline_verify_ssh_packages:
+  - openssh-server
+linux_security_baseline_verify_ssh_service:
+  name: sshd
+  state: running
+  enabled: true
+linux_security_baseline_verify_ssh_paths:
+  sshd_binary: /usr/sbin/sshd
+  main_config: /etc/ssh/sshd_config
+  config_directory: /etc/ssh/sshd_config.d
+  baseline_config: /etc/ssh/sshd_config.d/00-linux-security-baseline.conf
+  banner: /etc/issue.net
+linux_security_baseline_verify_ssh_settings:
+  loglevel: INFO
+  x11forwarding: "no"
+  maxauthtries: "4"
+  ignorerhosts: "yes"
+  hostbasedauthentication: "no"
+  permitrootlogin: "no"
+  permitemptypasswords: "no"
+  permituserenvironment: "no"
+  clientaliveinterval: "300"
+  clientalivecountmax: "0"
+  banner: /etc/issue.net
+linux_security_baseline_verify_ssh_approved_ciphers:
+  - aes256-gcm@openssh.com
+  - aes128-gcm@openssh.com
+  - chacha20-poly1305@openssh.com
+  - aes256-ctr
+  - aes192-ctr
+  - aes128-ctr
+linux_security_baseline_verify_ssh_require_protocol_on_rhel7: true
+
+linux_security_baseline_verify_cron_packages:
+  - cronie
+  - at
+linux_security_baseline_verify_cron_managed_paths:
+  - path: /etc/crontab
+    state: file
+    owner: root
+    group: root
+    mode: "0600"
+  - path: /etc/cron.hourly
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.daily
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.weekly
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.monthly
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+linux_security_baseline_verify_cron_allow_files:
+  - path: /etc/cron.allow
+    owner: root
+    group: root
+    mode: "0600"
+    users:
+      - root
+  - path: /etc/at.allow
+    owner: root
+    group: root
+    mode: "0600"
+    users:
+      - root
+linux_security_baseline_verify_cron_deny_files:
+  - /etc/cron.deny
+  - /etc/at.deny
+
+linux_security_baseline_verify_pam_packages_by_major:
+  "7":
+    - authconfig
+    - pam
+    - libpwquality
+  "8":
+    - authselect
+    - pam
+    - libpwquality
+  "9":
+    - authselect
+    - pam
+    - libpwquality
+  "10":
+    - authselect
+    - pam
+    - libpwquality
+linux_security_baseline_verify_pam_files:
+  pwquality: /etc/security/pwquality.conf
+  faillock: /etc/security/faillock.conf
+  pwhistory: /etc/security/pwhistory.conf
+linux_security_baseline_verify_pam_rhel7_auth_files:
+  - /etc/pam.d/system-auth-ac
+  - /etc/pam.d/password-auth-ac
+linux_security_baseline_verify_pam_authconfig_file: /etc/sysconfig/authconfig
+linux_security_baseline_verify_pam_authselect_path: /usr/bin/authselect
+linux_security_baseline_verify_pam_authselect_profile: custom/linux-security-baseline
+linux_security_baseline_verify_pam_authselect_features:
+  - with-faillock
+linux_security_baseline_verify_pam_pwquality:
+  minlen: "14"
+  dcredit: "-1"
+  ucredit: "-1"
+  lcredit: "-1"
+  ocredit: "-1"
+  difok: "4"
+  maxrepeat: "3"
+  maxclassrepeat: "4"
+  dictcheck: "1"
+  usercheck: "1"
+  enforcing: "1"
+linux_security_baseline_verify_pam_faillock:
+  deny: "5"
+  fail_interval: "900"
+  unlock_time: "900"
+linux_security_baseline_verify_pam_pwhistory:
+  remember: "5"
+linux_security_baseline_verify_pam_password_algorithm: sha512
+
+linux_security_baseline_verify_login_defs_file:
+  path: /etc/login.defs
+  owner: root
+  group: root
+  mode: "0644"
+linux_security_baseline_verify_login_defs_settings:
+  PASS_MAX_DAYS: "90"
+  PASS_MIN_DAYS: "7"
+  PASS_WARN_AGE: "14"
+  UMASK: "027"
+linux_security_baseline_verify_login_defs_user_update:
+  min_uid: 1000
+  include_root: false
+  excluded_users: []
+  excluded_shells:
+    - /sbin/nologin
+    - /usr/sbin/nologin
+    - /bin/false
+    - /usr/bin/false
+
+linux_security_baseline_verify_aide_packages:
+  - aide
+  - cronie
+linux_security_baseline_verify_aide_database:
+  path: /var/lib/aide/aide.db.gz
+  mode: "0600"
+linux_security_baseline_verify_aide_cron:
+  path: /etc/cron.d/linux-security-baseline-aide
+  mode: "0644"
+  command: /usr/sbin/aide --check
+
+linux_security_baseline_verify_rsyslog_packages:
+  - rsyslog
+linux_security_baseline_verify_rsyslog_service:
+  name: rsyslog
+  state: running
+  enabled: true
+linux_security_baseline_verify_rsyslog_main_config:
+  path: /etc/rsyslog.conf
+  mode: "0644"
+linux_security_baseline_verify_rsyslog_dropin_directory:
+  path: /etc/rsyslog.d
+  mode: "0755"
+linux_security_baseline_verify_rsyslog_modules:
+  - imuxsock
+  - imjournal
+linux_security_baseline_verify_rsyslog_rules:
+  - selector: "*.info;mail.none;authpriv.none;cron.none"
+    action: /var/log/messages
+  - selector: "authpriv.*"
+    action: /var/log/secure
+  - selector: "mail.*"
+    action: -/var/log/maillog
+  - selector: "cron.*"
+    action: /var/log/cron
+  - selector: "*.emerg"
+    action: ":omusrmsg:*"
+  - selector: "uucp,news.crit"
+    action: /var/log/spooler
+  - selector: "local7.*"
+    action: /var/log/boot.log
+
+linux_security_baseline_verify_firewalld_packages:
+  - firewalld
+linux_security_baseline_verify_firewalld_service:
+  name: firewalld
+  state: running
+  enabled: true
+
+linux_security_baseline_verify_gpg_key_file: /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+linux_security_baseline_verify_gpg_key_ids:
+  - fd431d51
+linux_security_baseline_verify_gpg_key_fingerprints:
+  - 567E347AD0044ADE55BA8A5F199E2F91FD431D51
+
+linux_security_baseline_verify_tags:
+  - baseline
+  - verify

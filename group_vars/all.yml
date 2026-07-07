@@ -1,0 +1,107 @@
+---
+linux_security_baseline_name: linux_security_baseline
+linux_security_baseline_owner: enterprise_linux_security
+linux_security_baseline_profile: enterprise
+linux_security_baseline_mode: audit
+
+linux_security_baseline_enforce: false
+linux_security_baseline_audit_only: true
+linux_security_baseline_manage_services: true
+linux_security_baseline_reboot_allowed: false
+linux_security_baseline_create_backups: true
+linux_security_baseline_backup_suffix: ".pre_lsb"
+
+linux_security_baseline_target_distribution: RedHat
+linux_security_baseline_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10
+
+linux_security_baseline_rhel_version_map:
+  "7":
+    label: rhel7
+    package_manager: yum
+    service_manager: systemd
+  "8":
+    label: rhel8
+    package_manager: dnf
+    service_manager: systemd
+  "9":
+    label: rhel9
+    package_manager: dnf
+    service_manager: systemd
+  "10":
+    label: rhel10
+    package_manager: dnf
+    service_manager: systemd
+
+linux_security_baseline_roles:
+  filesystem:
+    enabled: true
+    order: 10
+  kernel_modules:
+    enabled: true
+    order: 20
+  gpg:
+    enabled: true
+    order: 30
+  aide:
+    enabled: true
+    order: 40
+  process_hardening:
+    enabled: true
+    order: 50
+  network:
+    enabled: true
+    order: 60
+  ipv6:
+    enabled: true
+    order: 70
+  firewalld:
+    enabled: true
+    order: 80
+  rsyslog:
+    enabled: true
+    order: 90
+  auditd:
+    enabled: true
+    order: 100
+  cron:
+    enabled: true
+    order: 110
+  ssh:
+    enabled: true
+    order: 120
+  pam:
+    enabled: true
+    order: 130
+  login_defs:
+    enabled: true
+    order: 140
+  verify:
+    enabled: true
+    order: 990
+
+linux_security_baseline_role_sequence:
+  - filesystem
+  - kernel_modules
+  - gpg
+  - aide
+  - process_hardening
+  - network
+  - ipv6
+  - firewalld
+  - rsyslog
+  - auditd
+  - cron
+  - ssh
+  - pam
+  - login_defs
+  - verify
+
+linux_security_baseline_common_tags:
+  - baseline
+  - security
+  - rhel
+

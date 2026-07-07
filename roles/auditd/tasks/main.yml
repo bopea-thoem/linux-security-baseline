@@ -1,0 +1,288 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for auditd role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_auditd_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for auditd role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for auditd role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_auditd_enabled | bool
+  tags:
+    - always
+    - baseline
+    - auditd
+    - auditd_verify
+
+- name: Set auditd rule backend for platform
+  ansible.builtin.set_fact:
+    linux_security_baseline_auditd_effective_rules_backend: >-
+      {{
+        linux_security_baseline_auditd_rules_backend_rhel7
+        if ansible_facts.distribution_major_version | int == 7
+        else linux_security_baseline_auditd_rules_backend_rhel8_plus
+      }}
+  when: linux_security_baseline_auditd_enabled | bool
+  tags:
+    - always
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Install auditd packages
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_auditd_packages }}"
+    state: present
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_install | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_package
+
+- name: Ensure auditd directories exist
+  ansible.builtin.file:
+    path: "{{ item.value.path }}"
+    state: directory
+    owner: "{{ item.value.owner }}"
+    group: "{{ item.value.group }}"
+    mode: "{{ item.value.mode }}"
+  loop: "{{ linux_security_baseline_auditd_directories | dict2items }}"
+  loop_control:
+    label: "{{ item.value.path }}"
+  when: linux_security_baseline_auditd_enabled | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_config
+    - auditd_rules
+
+- name: Configure auditd
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_config_template }}"
+    dest: "{{ linux_security_baseline_auditd_config.path }}"
+    owner: "{{ linux_security_baseline_auditd_config.owner }}"
+    group: "{{ linux_security_baseline_auditd_config.group }}"
+    mode: "{{ linux_security_baseline_auditd_config.mode }}"
+  notify: Reload auditd configuration
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_config | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_config
+
+- name: Check audit watch paths
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop: "{{ linux_security_baseline_auditd_watch_rules }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_auditd_watch_path_stats
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Assert required audit watch paths exist
+  ansible.builtin.assert:
+    that:
+      - item.stat.exists
+    fail_msg: "Required audit watch path is missing: {{ item.item.path }}"
+  loop: "{{ linux_security_baseline_auditd_watch_path_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - item.item.required | default(false) | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Check audit executable rule paths
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop: "{{ linux_security_baseline_auditd_exec_rules }}"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_auditd_exec_path_stats
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Check privileged executable discovery roots
+  ansible.builtin.stat:
+    path: "{{ item }}"
+  loop: "{{ linux_security_baseline_auditd_privileged_command_discovery_paths }}"
+  loop_control:
+    label: "{{ item }}"
+  register: linux_security_baseline_auditd_privileged_discovery_root_stats
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_discover_privileged_commands | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Discover privileged executables for audit rules
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_auditd_find_path }}"
+      - "{{ item.item }}"
+      - -xdev
+      - -type
+      - f
+      - "("
+      - -perm
+      - "-4000"
+      - -o
+      - -perm
+      - "-2000"
+      - ")"
+  loop: "{{ linux_security_baseline_auditd_privileged_discovery_root_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  register: linux_security_baseline_auditd_discovered_exec_paths
+  changed_when: false
+  failed_when: false
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_discover_privileged_commands | bool
+    - item.stat.exists
+    - item.stat.isdir
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Configure audit base rules with augenrules backend
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_base_rules_template }}"
+    dest: "{{ linux_security_baseline_auditd_rules_files.base.path }}"
+    owner: "{{ linux_security_baseline_auditd_rules_files.base.owner }}"
+    group: "{{ linux_security_baseline_auditd_rules_files.base.group }}"
+    mode: "{{ linux_security_baseline_auditd_rules_files.base.mode }}"
+  notify: Load audit rules
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Configure audit main rules with augenrules backend
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_main_rules_template }}"
+    dest: "{{ linux_security_baseline_auditd_rules_files.main.path }}"
+    owner: "{{ linux_security_baseline_auditd_rules_files.main.owner }}"
+    group: "{{ linux_security_baseline_auditd_rules_files.main.group }}"
+    mode: "{{ linux_security_baseline_auditd_rules_files.main.mode }}"
+  notify: Load audit rules
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Configure audit finalize rules with augenrules backend
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_auditd_finalize_rules_template }}"
+    dest: "{{ linux_security_baseline_auditd_rules_files.finalize.path }}"
+    owner: "{{ linux_security_baseline_auditd_rules_files.finalize.owner }}"
+    group: "{{ linux_security_baseline_auditd_rules_files.finalize.group }}"
+    mode: "{{ linux_security_baseline_auditd_rules_files.finalize.mode }}"
+  notify: Load audit rules
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+    - linux_security_baseline_auditd_rules_immutable | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Remove managed audit finalize rules when immutable mode is disabled
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_auditd_rules_files.finalize.path }}"
+    state: absent
+  notify: Load audit rules
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'rules_d'
+    - not linux_security_baseline_auditd_rules_immutable | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Configure audit rules with legacy audit.rules backend
+  ansible.builtin.blockinfile:
+    path: "{{ linux_security_baseline_auditd_legacy_rules_file.path }}"
+    create: true
+    owner: "{{ linux_security_baseline_auditd_legacy_rules_file.owner }}"
+    group: "{{ linux_security_baseline_auditd_legacy_rules_file.group }}"
+    mode: "{{ linux_security_baseline_auditd_legacy_rules_file.mode }}"
+    marker: "{{ linux_security_baseline_auditd_legacy_rules_file.marker }}"
+    block: "{{ lookup('ansible.builtin.template', linux_security_baseline_auditd_legacy_rules_template) }}"
+  notify: Load audit rules
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+    - linux_security_baseline_auditd_effective_rules_backend == 'audit_rules_file'
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
+- name: Enable and start auditd service
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_auditd_service.name }}"
+    enabled: "{{ linux_security_baseline_auditd_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_auditd_service.state }}"
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_service | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_service
+
+- name: Apply pending auditd handlers before verification
+  ansible.builtin.meta: flush_handlers
+  tags:
+    - baseline
+    - auditd
+    - auditd_verify
+
+- name: Import auditd verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_auditd_enabled | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_verify
+    - verify

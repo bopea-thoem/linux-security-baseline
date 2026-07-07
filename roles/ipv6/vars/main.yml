@@ -1,0 +1,7 @@
+---
+linux_security_baseline_ipv6_domain: ipv6
+linux_security_baseline_ipv6_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10

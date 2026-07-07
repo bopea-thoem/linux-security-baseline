@@ -1,0 +1,135 @@
+---
+- name: Linux Security Baseline
+  hosts: linux_security
+  become: true
+  gather_facts: true
+  any_errors_fatal: true
+
+  handlers:
+    - name: Import common handlers
+      ansible.builtin.import_tasks: ../handlers/main.yml
+
+  pre_tasks:
+    - name: Assert supported Red Hat Enterprise Linux platform
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == linux_security_baseline_target_distribution
+          - ansible_facts.distribution_major_version | int in linux_security_baseline_supported_major_versions
+        fail_msg: >-
+          Unsupported platform detected: {{ ansible_facts.distribution }}
+          {{ ansible_facts.distribution_version }}. Supported platforms are RHEL
+          {{ linux_security_baseline_supported_major_versions | join(', ') }}.
+        success_msg: >-
+          Supported platform detected: {{ ansible_facts.distribution }}
+          {{ ansible_facts.distribution_version }}.
+      tags:
+        - always
+        - baseline
+        - version_detection
+
+    - name: Set Linux Security Baseline version facts
+      ansible.builtin.set_fact:
+        linux_security_baseline_os_major_version: "{{ ansible_facts.distribution_major_version | int }}"
+        linux_security_baseline_os_version_key: "{{ ansible_facts.distribution_major_version }}"
+        linux_security_baseline_os_profile: >-
+          {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].label }}
+        linux_security_baseline_package_manager: >-
+          {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].package_manager }}
+        linux_security_baseline_service_manager: >-
+          {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].service_manager }}
+      tags:
+        - always
+        - baseline
+        - version_detection
+
+  roles:
+    - role: filesystem
+      when: linux_security_baseline_roles.filesystem.enabled | bool
+      tags:
+        - baseline
+        - filesystem
+
+    - role: kernel_modules
+      when: linux_security_baseline_roles.kernel_modules.enabled | bool
+      tags:
+        - baseline
+        - kernel_modules
+
+    - role: gpg
+      when: linux_security_baseline_roles.gpg.enabled | bool
+      tags:
+        - baseline
+        - gpg
+
+    - role: aide
+      when: linux_security_baseline_roles.aide.enabled | bool
+      tags:
+        - baseline
+        - aide
+
+    - role: process_hardening
+      when: linux_security_baseline_roles.process_hardening.enabled | bool
+      tags:
+        - baseline
+        - process_hardening
+
+    - role: network
+      when: linux_security_baseline_roles.network.enabled | bool
+      tags:
+        - baseline
+        - network
+
+    - role: ipv6
+      when: linux_security_baseline_roles.ipv6.enabled | bool
+      tags:
+        - baseline
+        - ipv6
+
+    - role: firewalld
+      when: linux_security_baseline_roles.firewalld.enabled | bool
+      tags:
+        - baseline
+        - firewalld
+
+    - role: rsyslog
+      when: linux_security_baseline_roles.rsyslog.enabled | bool
+      tags:
+        - baseline
+        - rsyslog
+
+    - role: auditd
+      when: linux_security_baseline_roles.auditd.enabled | bool
+      tags:
+        - baseline
+        - auditd
+
+    - role: cron
+      when: linux_security_baseline_roles.cron.enabled | bool
+      tags:
+        - baseline
+        - cron
+
+    - role: ssh
+      when: linux_security_baseline_roles.ssh.enabled | bool
+      tags:
+        - baseline
+        - ssh
+
+    - role: pam
+      when: linux_security_baseline_roles.pam.enabled | bool
+      tags:
+        - baseline
+        - pam
+
+    - role: login_defs
+      when: linux_security_baseline_roles.login_defs.enabled | bool
+      tags:
+        - baseline
+        - login_defs
+
+    - role: verify
+      when: linux_security_baseline_roles.verify.enabled | bool
+      tags:
+        - baseline
+        - verify
+

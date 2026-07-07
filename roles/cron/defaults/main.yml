@@ -1,0 +1,65 @@
+---
+linux_security_baseline_cron_enabled: true
+linux_security_baseline_cron_install: true
+linux_security_baseline_cron_manage_files: true
+linux_security_baseline_cron_manage_access: true
+linux_security_baseline_cron_verify: true
+linux_security_baseline_cron_verify_fail_on_drift: true
+
+linux_security_baseline_cron_packages:
+  - cronie
+  - at
+
+linux_security_baseline_cron_managed_paths:
+  - path: /etc/crontab
+    state: file
+    owner: root
+    group: root
+    mode: "0600"
+  - path: /etc/cron.hourly
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.daily
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.weekly
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.monthly
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+  - path: /etc/cron.d
+    state: directory
+    owner: root
+    group: root
+    mode: "0700"
+
+linux_security_baseline_cron_allow_files:
+  - path: /etc/cron.allow
+    owner: root
+    group: root
+    mode: "0600"
+    users:
+      - root
+  - path: /etc/at.allow
+    owner: root
+    group: root
+    mode: "0600"
+    users:
+      - root
+
+linux_security_baseline_cron_deny_files:
+  - /etc/cron.deny
+  - /etc/at.deny
+
+linux_security_baseline_cron_tags:
+  - baseline
+  - cron

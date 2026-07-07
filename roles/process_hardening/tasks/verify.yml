@@ -1,0 +1,81 @@
+---
+- name: Read limits.conf for process hardening verification
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_process_hardening_limits_file.path }}"
+  register: linux_security_baseline_process_hardening_limits_slurp
+  failed_when: false
+  when: linux_security_baseline_process_hardening_verify | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_verify
+    - verify
+
+- name: Verify core dump limits
+  ansible.builtin.assert:
+    that:
+      - >-
+        (
+          linux_security_baseline_process_hardening_limits_slurp.content
+          | default('')
+          | b64decode
+          | regex_search(
+              '(?m)^\\s*' ~ (item.domain | regex_escape) ~ '\\s+'
+              ~ item.limit_type ~ '\\s+'
+              ~ item.limit_item ~ '\\s+'
+              ~ item.value ~ '\\s*$'
+            )
+        ) is not none
+    fail_msg: "Core dump limit is not compliant: {{ item }}"
+    success_msg: "Core dump limit is compliant: {{ item }}"
+  loop: "{{ linux_security_baseline_process_hardening_limits }}"
+  loop_control:
+    label: "{{ item.domain }} {{ item.limit_type }} {{ item.limit_item }}"
+  when:
+    - linux_security_baseline_process_hardening_verify | bool
+    - linux_security_baseline_process_hardening_verify_fail_on_drift | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_verify
+    - verify
+
+- name: Read process hardening sysctl values
+  ansible.builtin.command:
+    argv:
+      - sysctl
+      - -n
+      - "{{ item.name }}"
+  loop: "{{ linux_security_baseline_process_hardening_sysctl_settings }}"
+  loop_control:
+    label: "{{ item.name }}"
+  register: linux_security_baseline_process_hardening_sysctl_verify
+  changed_when: false
+  failed_when: false
+  when: linux_security_baseline_process_hardening_verify | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_verify
+    - verify
+
+- name: Verify process hardening sysctl values
+  ansible.builtin.assert:
+    that:
+      - item.rc == 0
+      - item.stdout | trim == item.item.value | string
+    fail_msg: >-
+      Process hardening sysctl {{ item.item.name }} expected
+      {{ item.item.value }} but found {{ item.stdout | default(item.stderr) }}.
+    success_msg: "Process hardening sysctl {{ item.item.name }} is compliant."
+  loop: "{{ linux_security_baseline_process_hardening_sysctl_verify.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.name }}"
+  when:
+    - linux_security_baseline_process_hardening_verify | bool
+    - linux_security_baseline_process_hardening_verify_fail_on_drift | bool
+  tags:
+    - baseline
+    - process_hardening
+    - process_hardening_verify
+    - verify

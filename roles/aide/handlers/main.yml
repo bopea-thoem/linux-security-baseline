@@ -1,0 +1,6 @@
+---
+- name: Restart crond
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_aide_crond_service }}"
+    state: restarted
+  when: linux_security_baseline_aide_restart_crond_on_change | bool

@@ -1,0 +1,18 @@
+---
+linux_security_baseline_firewalld_enabled: true
+linux_security_baseline_firewalld_install: true
+linux_security_baseline_firewalld_manage_service: true
+linux_security_baseline_firewalld_verify: true
+linux_security_baseline_firewalld_verify_fail_on_drift: true
+
+linux_security_baseline_firewalld_packages:
+  - firewalld
+
+linux_security_baseline_firewalld_service:
+  name: firewalld
+  enabled: true
+  state: started
+
+linux_security_baseline_firewalld_tags:
+  - baseline
+  - firewalld

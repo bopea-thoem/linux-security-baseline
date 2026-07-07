@@ -1,0 +1,368 @@
+---
+- name: Verify PAM baseline packages are installed
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_pam_packages }}"
+    state: present
+  check_mode: true
+  register: linux_security_baseline_pam_package_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_package_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_install | bool
+  tags:
+    - baseline
+    - pam
+    - pam_package
+    - pam_verify
+    - verify
+
+- name: Verify password complexity policy
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_pam_pwquality_template }}"
+    dest: "{{ linux_security_baseline_pam_files.pwquality.path }}"
+    owner: "{{ linux_security_baseline_pam_files.pwquality.owner }}"
+    group: "{{ linux_security_baseline_pam_files.pwquality.group }}"
+    mode: "{{ linux_security_baseline_pam_files.pwquality.mode }}"
+  check_mode: true
+  register: linux_security_baseline_pam_pwquality_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_pwquality_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_pwquality | bool
+  tags:
+    - baseline
+    - pam
+    - pam_pwquality
+    - pam_verify
+    - verify
+
+- name: Verify faillock policy
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_pam_faillock_template }}"
+    dest: "{{ linux_security_baseline_pam_files.faillock.path }}"
+    owner: "{{ linux_security_baseline_pam_files.faillock.owner }}"
+    group: "{{ linux_security_baseline_pam_files.faillock.group }}"
+    mode: "{{ linux_security_baseline_pam_files.faillock.mode }}"
+  check_mode: true
+  register: linux_security_baseline_pam_faillock_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_faillock_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_faillock | bool
+  tags:
+    - baseline
+    - pam
+    - pam_faillock
+    - pam_verify
+    - verify
+
+- name: Verify password history policy
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_pam_pwhistory_template }}"
+    dest: "{{ linux_security_baseline_pam_files.pwhistory.path }}"
+    owner: "{{ linux_security_baseline_pam_files.pwhistory.owner }}"
+    group: "{{ linux_security_baseline_pam_files.pwhistory.group }}"
+    mode: "{{ linux_security_baseline_pam_files.pwhistory.mode }}"
+  check_mode: true
+  register: linux_security_baseline_pam_pwhistory_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_pwhistory_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_pwhistory | bool
+  tags:
+    - baseline
+    - pam
+    - pam_pwhistory
+    - pam_verify
+    - verify
+
+- name: Verify RHEL 7 authconfig state file SHA512
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/authconfig
+    regexp: '^PASSWDALGORITHM='
+    line: "PASSWDALGORITHM={{ linux_security_baseline_pam_password.algorithm }}"
+  check_mode: true
+  register: linux_security_baseline_pam_authconfig_sha512_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_authconfig_sha512_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_authconfig
+    - pam_verify
+    - verify
+
+- name: Verify RHEL 7 authconfig state file faillock
+  ansible.builtin.lineinfile:
+    path: /etc/sysconfig/authconfig
+    regexp: '^USEFAILLOCK='
+    line: USEFAILLOCK=yes
+  check_mode: true
+  register: linux_security_baseline_pam_authconfig_faillock_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_authconfig_faillock_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_authconfig
+    - pam_verify
+    - verify
+
+- name: Read RHEL 7 authconfig state for faillock arguments
+  ansible.builtin.slurp:
+    src: /etc/sysconfig/authconfig
+  register: linux_security_baseline_pam_verify_rhel7_authconfig_state
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_authconfig
+    - pam_verify
+    - verify
+
+- name: Verify RHEL 7 authconfig faillock arguments
+  ansible.builtin.assert:
+    that:
+      - >-
+        linux_security_baseline_pam_faillock_args | trim
+        in (
+          linux_security_baseline_pam_verify_rhel7_authconfig_state.content
+          | b64decode
+        )
+    fail_msg: RHEL 7 authconfig faillock arguments do not match baseline.
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_authconfig
+    - pam_verify
+    - verify
+
+- name: Verify RHEL 7 pam_pwquality stack entries
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^password\s+requisite\s+pam_pwquality\.so\b.*'
+    line: >-
+      password    requisite     pam_pwquality.so
+      try_first_pass local_users_only
+      retry={{ linux_security_baseline_pam_password.pwquality_retry }}
+      authtok_type=
+  loop: "{{ linux_security_baseline_pam_rhel7_auth_files }}"
+  loop_control:
+    label: "{{ item }}"
+  check_mode: true
+  register: linux_security_baseline_pam_rhel7_pwquality_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_rhel7_pwquality_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwquality | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_pwquality
+    - pam_verify
+    - verify
+
+- name: Verify RHEL 7 password history stack entries
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^password\s+required\s+pam_pwhistory\.so\b.*'
+    line: >-
+      password    required      pam_pwhistory.so
+      {{ linux_security_baseline_pam_pwhistory_module_args | trim }}
+    insertbefore: '^password\s+sufficient\s+pam_unix\.so\b.*'
+  loop: "{{ linux_security_baseline_pam_rhel7_auth_files }}"
+  loop_control:
+    label: "{{ item }}"
+  check_mode: true
+  register: linux_security_baseline_pam_rhel7_pwhistory_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_rhel7_pwhistory_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwhistory | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_pwhistory
+    - pam_verify
+    - verify
+
+- name: Verify RHEL 7 pam_unix SHA512 stack entries
+  ansible.builtin.lineinfile:
+    path: "{{ item }}"
+    regexp: '^password\s+sufficient\s+pam_unix\.so\b.*'
+    line: >-
+      password    sufficient    pam_unix.so
+      {{ linux_security_baseline_pam_password.algorithm }}
+      shadow nullok try_first_pass use_authtok
+  loop: "{{ linux_security_baseline_pam_rhel7_auth_files }}"
+  loop_control:
+    label: "{{ item }}"
+  check_mode: true
+  register: linux_security_baseline_pam_rhel7_sha512_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_rhel7_sha512_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int == 7
+  tags:
+    - baseline
+    - pam
+    - pam_sha512
+    - pam_verify
+    - verify
+
+- name: Verify authselect current profile
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_pam_authselect_path }}"
+      - current
+      - --raw
+  register: linux_security_baseline_pam_authselect_verify_current
+  changed_when: false
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - >-
+      linux_security_baseline_pam_authselect_custom_profile
+      not in (
+        linux_security_baseline_pam_authselect_verify_current.stdout
+        | default('')
+        | split
+      )
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+    - pam_verify
+    - verify
+
+- name: Verify authselect pam_pwquality profile entries
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_pam_authselect_custom_profile_path }}/{{ item }}"
+    regexp: '^password\s+requisite\s+pam_pwquality\.so\b.*'
+    line: >-
+      password    requisite     pam_pwquality.so
+      local_users_only
+      retry={{ linux_security_baseline_pam_password.pwquality_retry }}
+    insertbefore: '^password\s+sufficient\s+pam_unix\.so\b.*'
+  loop:
+    - system-auth
+    - password-auth
+  loop_control:
+    label: "{{ item }}"
+  check_mode: true
+  register: linux_security_baseline_pam_authselect_pwquality_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_authselect_pwquality_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwquality | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+    - pam_pwquality
+    - pam_verify
+    - verify
+
+- name: Verify authselect password history profile entries
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_pam_authselect_custom_profile_path }}/{{ item }}"
+    regexp: '^password\s+required\s+pam_pwhistory\.so\b.*'
+    line: >-
+      password    required      pam_pwhistory.so
+      {{ linux_security_baseline_pam_pwhistory_module_args | trim }}
+    insertbefore: '^password\s+sufficient\s+pam_unix\.so\b.*'
+  loop:
+    - system-auth
+    - password-auth
+  loop_control:
+    label: "{{ item }}"
+  check_mode: true
+  register: linux_security_baseline_pam_authselect_pwhistory_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_authselect_pwhistory_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_manage_pwhistory | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+    - pam_pwhistory
+    - pam_verify
+    - verify
+
+- name: Verify authselect pam_unix SHA512 profile entries
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_pam_authselect_custom_profile_path }}/{{ item }}"
+    regexp: '^password\s+sufficient\s+pam_unix\.so\b.*'
+    line: >-
+      password    sufficient    pam_unix.so
+      {{ linux_security_baseline_pam_password.algorithm }}
+      shadow nullok use_authtok
+  loop:
+    - system-auth
+    - password-auth
+  loop_control:
+    label: "{{ item }}"
+  check_mode: true
+  register: linux_security_baseline_pam_authselect_sha512_verify_result
+  failed_when:
+    - linux_security_baseline_pam_verify_fail_on_drift | bool
+    - linux_security_baseline_pam_authselect_sha512_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_pam_verify | bool
+    - linux_security_baseline_pam_manage_auth_stack | bool
+    - linux_security_baseline_pam_os_major | int >= 8
+  tags:
+    - baseline
+    - pam
+    - pam_authselect
+    - pam_sha512
+    - pam_verify
+    - verify

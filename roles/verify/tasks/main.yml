@@ -1,0 +1,140 @@
+---
+- name: Verify Linux Security Baseline
+  when: linux_security_baseline_verify_enabled | bool
+  tags:
+    - baseline
+    - verify
+  block:
+    - name: Assert supported Red Hat Enterprise Linux platform for verify role
+      ansible.builtin.assert:
+        that:
+          - ansible_facts.distribution == linux_security_baseline_target_distribution
+          - >-
+            ansible_facts.distribution_major_version | int
+            in linux_security_baseline_supported_major_versions
+        fail_msg: >-
+          Unsupported platform detected for verify role:
+          {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+        success_msg: >-
+          Supported platform detected for verify role:
+          {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+      tags:
+        - always
+        - verify
+
+    - name: Initialize compliance result collection
+      ansible.builtin.set_fact:
+        linux_security_baseline_verify_results: []
+        linux_security_baseline_verify_generated_at: >-
+          {{
+            ansible_date_time.iso8601
+            if linux_security_baseline_verify_include_timestamp | bool
+            else 'timestamp-disabled-for-idempotence'
+          }}
+      tags:
+        - always
+        - verify
+
+    - name: Gather installed package facts
+      ansible.builtin.package_facts:
+        manager: auto
+      failed_when: false
+      tags:
+        - always
+        - verify
+
+    - name: Gather service facts
+      ansible.builtin.service_facts:
+      failed_when: false
+      tags:
+        - always
+        - verify
+
+    - name: Import filesystem verification
+      ansible.builtin.import_tasks: filesystem.yml
+      tags:
+        - baseline
+        - verify
+        - filesystem
+        - kernel_modules
+
+    - name: Import GPG verification
+      ansible.builtin.import_tasks: gpg.yml
+      tags:
+        - baseline
+        - verify
+        - gpg
+
+    - name: Import sysctl verification
+      ansible.builtin.import_tasks: sysctl.yml
+      tags:
+        - baseline
+        - verify
+        - process_hardening
+        - network
+        - ipv6
+        - sysctl
+
+    - name: Import auditd verification
+      ansible.builtin.import_tasks: audit.yml
+      tags:
+        - baseline
+        - verify
+        - auditd
+        - audit
+
+    - name: Import SSH verification
+      ansible.builtin.import_tasks: ssh.yml
+      tags:
+        - baseline
+        - verify
+        - ssh
+
+    - name: Import cron verification
+      ansible.builtin.import_tasks: cron.yml
+      tags:
+        - baseline
+        - verify
+        - cron
+
+    - name: Import PAM verification
+      ansible.builtin.import_tasks: pam.yml
+      tags:
+        - baseline
+        - verify
+        - pam
+
+    - name: Import login definitions verification
+      ansible.builtin.import_tasks: login_defs.yml
+      tags:
+        - baseline
+        - verify
+        - login_defs
+
+    - name: Import AIDE verification
+      ansible.builtin.import_tasks: aide.yml
+      tags:
+        - baseline
+        - verify
+        - aide
+
+    - name: Import rsyslog verification
+      ansible.builtin.import_tasks: rsyslog.yml
+      tags:
+        - baseline
+        - verify
+        - rsyslog
+
+    - name: Import firewalld verification
+      ansible.builtin.import_tasks: firewalld.yml
+      tags:
+        - baseline
+        - verify
+        - firewalld
+
+    - name: Generate compliance report
+      ansible.builtin.import_tasks: report.yml
+      tags:
+        - always
+        - verify
+        - report

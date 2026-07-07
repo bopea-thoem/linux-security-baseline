@@ -1,0 +1,83 @@
+---
+- name: Verify rsyslog packages are installed
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_rsyslog_packages }}"
+    state: present
+  check_mode: true
+  register: linux_security_baseline_rsyslog_package_verify_result
+  failed_when:
+    - linux_security_baseline_rsyslog_verify_fail_on_drift | bool
+    - linux_security_baseline_rsyslog_package_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_rsyslog_verify | bool
+    - linux_security_baseline_rsyslog_install | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_package
+    - rsyslog_verify
+    - verify
+
+- name: Verify rsyslog drop-in directory
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_rsyslog_dropin_directory.path }}"
+    state: directory
+    owner: "{{ linux_security_baseline_rsyslog_dropin_directory.owner }}"
+    group: "{{ linux_security_baseline_rsyslog_dropin_directory.group }}"
+    mode: "{{ linux_security_baseline_rsyslog_dropin_directory.mode }}"
+  check_mode: true
+  register: linux_security_baseline_rsyslog_dropin_verify_result
+  failed_when:
+    - linux_security_baseline_rsyslog_verify_fail_on_drift | bool
+    - linux_security_baseline_rsyslog_dropin_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_rsyslog_verify | bool
+    - linux_security_baseline_rsyslog_manage_dropin_directory | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_config
+    - rsyslog_verify
+    - verify
+
+- name: Verify rsyslog main configuration
+  ansible.builtin.template:
+    src: "{{ linux_security_baseline_rsyslog_main_config_template }}"
+    dest: "{{ linux_security_baseline_rsyslog_main_config.path }}"
+    owner: "{{ linux_security_baseline_rsyslog_main_config.owner }}"
+    group: "{{ linux_security_baseline_rsyslog_main_config.group }}"
+    mode: "{{ linux_security_baseline_rsyslog_main_config.mode }}"
+  check_mode: true
+  register: linux_security_baseline_rsyslog_config_verify_result
+  failed_when:
+    - linux_security_baseline_rsyslog_verify_fail_on_drift | bool
+    - linux_security_baseline_rsyslog_config_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_rsyslog_verify | bool
+    - linux_security_baseline_rsyslog_manage_main_config | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_config
+    - rsyslog_verify
+    - verify
+
+- name: Verify rsyslog service is enabled and started
+  ansible.builtin.systemd:
+    name: "{{ linux_security_baseline_rsyslog_service.name }}"
+    enabled: "{{ linux_security_baseline_rsyslog_service.enabled | bool }}"
+    state: "{{ linux_security_baseline_rsyslog_service.state }}"
+  check_mode: true
+  register: linux_security_baseline_rsyslog_service_verify_result
+  failed_when:
+    - linux_security_baseline_rsyslog_verify_fail_on_drift | bool
+    - linux_security_baseline_rsyslog_service_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_rsyslog_verify | bool
+    - linux_security_baseline_rsyslog_manage_service | bool
+  tags:
+    - baseline
+    - rsyslog
+    - rsyslog_service
+    - rsyslog_verify
+    - verify

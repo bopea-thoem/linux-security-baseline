@@ -1,0 +1,91 @@
+---
+- name: Set effective firewalld verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_firewalld_packages_effective: >-
+      {{
+        linux_security_baseline_firewalld_packages
+        | default(linux_security_baseline_verify_firewalld_packages)
+      }}
+    linux_security_baseline_verify_firewalld_service_effective: >-
+      {{
+        linux_security_baseline_firewalld_service
+        | default(linux_security_baseline_verify_firewalld_service)
+      }}
+  tags:
+    - baseline
+    - verify
+    - firewalld
+
+- name: Record firewalld package compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'firewalld',
+            'control': 'package ' ~ item ~ ' installed',
+            'compliant': item in (ansible_facts.packages | default({})),
+            'expected': 'installed',
+            'actual': (
+              'installed'
+              if item in (ansible_facts.packages | default({}))
+              else 'missing'
+            ),
+            'message': 'Verify firewalld package is installed.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_firewalld_packages_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - firewalld
+
+- name: Record firewalld service compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'firewalld',
+            'control': 'service ' ~ linux_security_baseline_verify_firewalld_service_effective.name,
+            'compliant': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_firewalld_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing') == 'running'
+              and (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_firewalld_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing') in ['enabled', 'static']
+            ),
+            'expected': 'running and enabled',
+            'actual': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_firewalld_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing')
+              ~ '/'
+              ~ (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_firewalld_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing')
+            ),
+            'message': 'Verify firewalld service is active and enabled.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - firewalld

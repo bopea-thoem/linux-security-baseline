@@ -1,0 +1,65 @@
+---
+- name: Set effective GPG verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_gpg_key_file_effective: >-
+      {{
+        linux_security_baseline_gpg_redhat_release_key.path
+        | default(linux_security_baseline_verify_gpg_key_file)
+      }}
+    linux_security_baseline_verify_gpg_key_ids_effective: >-
+      {{ linux_security_baseline_verify_gpg_key_ids }}
+  tags:
+    - baseline
+    - verify
+    - gpg
+
+- name: Check Red Hat release GPG key file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_verify_gpg_key_file_effective }}"
+  register: linux_security_baseline_verify_gpg_key_file_stat
+  tags:
+    - baseline
+    - verify
+    - gpg
+
+- name: List installed RPM GPG public keys
+  ansible.builtin.command:
+    argv:
+      - rpm
+      - -q
+      - gpg-pubkey
+  register: linux_security_baseline_verify_rpm_gpg_keys
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - gpg
+
+- name: Record Red Hat GPG key compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'gpg',
+            'control': 'Red Hat release GPG key installed',
+            'compliant': (
+              linux_security_baseline_verify_gpg_key_file_stat.stat.exists
+              and (
+                linux_security_baseline_verify_gpg_key_ids_effective
+                | select('in', linux_security_baseline_verify_rpm_gpg_keys.stdout | lower)
+                | list
+                | length
+              ) > 0
+            ),
+            'expected': linux_security_baseline_verify_gpg_key_ids_effective | join(','),
+            'actual': linux_security_baseline_verify_rpm_gpg_keys.stdout | default('missing'),
+            'message': 'Verify the Red Hat release GPG key exists and is trusted by RPM.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - gpg

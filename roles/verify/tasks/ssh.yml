@@ -1,0 +1,381 @@
+---
+- name: Set effective SSH verification expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_ssh_packages_effective: >-
+      {{
+        linux_security_baseline_ssh_packages
+        | default(linux_security_baseline_verify_ssh_packages)
+      }}
+    linux_security_baseline_verify_ssh_service_effective: >-
+      {{
+        linux_security_baseline_ssh_service
+        | default(linux_security_baseline_verify_ssh_service)
+      }}
+    linux_security_baseline_verify_ssh_paths_effective: >-
+      {{
+        linux_security_baseline_ssh_paths
+        | default(linux_security_baseline_verify_ssh_paths)
+      }}
+    linux_security_baseline_verify_ssh_ciphers_effective: >-
+      {{
+        linux_security_baseline_ssh_approved_ciphers
+        | default(linux_security_baseline_verify_ssh_approved_ciphers)
+      }}
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Set effective SSH directive expectations
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_ssh_settings_effective:
+      loglevel: >-
+        {{
+          linux_security_baseline_ssh_settings.log_level
+          | default(linux_security_baseline_verify_ssh_settings.loglevel)
+        }}
+      x11forwarding: >-
+        {{
+          linux_security_baseline_ssh_settings.x11_forwarding
+          | default(linux_security_baseline_verify_ssh_settings.x11forwarding)
+        }}
+      maxauthtries: >-
+        {{
+          linux_security_baseline_ssh_settings.max_auth_tries
+          | default(linux_security_baseline_verify_ssh_settings.maxauthtries)
+        }}
+      ignorerhosts: >-
+        {{
+          linux_security_baseline_ssh_settings.ignore_rhosts
+          | default(linux_security_baseline_verify_ssh_settings.ignorerhosts)
+        }}
+      hostbasedauthentication: >-
+        {{
+          linux_security_baseline_ssh_settings.hostbased_authentication
+          | default(linux_security_baseline_verify_ssh_settings.hostbasedauthentication)
+        }}
+      permitrootlogin: >-
+        {{
+          linux_security_baseline_ssh_settings.permit_root_login
+          | default(linux_security_baseline_verify_ssh_settings.permitrootlogin)
+        }}
+      permitemptypasswords: >-
+        {{
+          linux_security_baseline_ssh_settings.permit_empty_passwords
+          | default(linux_security_baseline_verify_ssh_settings.permitemptypasswords)
+        }}
+      permituserenvironment: >-
+        {{
+          linux_security_baseline_ssh_settings.permit_user_environment
+          | default(linux_security_baseline_verify_ssh_settings.permituserenvironment)
+        }}
+      clientaliveinterval: >-
+        {{
+          linux_security_baseline_ssh_settings.client_alive_interval
+          | default(linux_security_baseline_verify_ssh_settings.clientaliveinterval)
+        }}
+      clientalivecountmax: >-
+        {{
+          linux_security_baseline_ssh_settings.client_alive_count_max
+          | default(linux_security_baseline_verify_ssh_settings.clientalivecountmax)
+        }}
+      banner: >-
+        {{
+          linux_security_baseline_ssh_settings.banner
+          | default(linux_security_baseline_verify_ssh_settings.banner)
+        }}
+      ciphers: "{{ linux_security_baseline_verify_ssh_ciphers_effective | join(',') }}"
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Record SSH package compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'ssh',
+            'control': 'package ' ~ item ~ ' installed',
+            'compliant': item in (ansible_facts.packages | default({})),
+            'expected': 'installed',
+            'actual': (
+              'installed'
+              if item in (ansible_facts.packages | default({}))
+              else 'missing'
+            ),
+            'message': 'Verify OpenSSH server package is installed.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_ssh_packages_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Record sshd service compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'ssh',
+            'control': 'service ' ~ linux_security_baseline_verify_ssh_service_effective.name,
+            'compliant': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_ssh_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing') == 'running'
+              and (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_ssh_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing') in ['enabled', 'static']
+            ),
+            'expected': 'running and enabled',
+            'actual': (
+              (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_ssh_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('state', 'missing')
+              ~ '/'
+              ~ (
+                (ansible_facts.services | default({})).get(
+                  linux_security_baseline_verify_ssh_service_effective.name ~ '.service',
+                  {}
+                )
+              ).get('status', 'missing')
+            ),
+            'message': 'Verify sshd service is active and enabled.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Check SSH baseline files
+  ansible.builtin.stat:
+    path: "{{ item.path }}"
+  loop:
+    - path: "{{ linux_security_baseline_verify_ssh_paths_effective.main_config }}"
+      control: sshd_config
+      mode: "0600"
+    - path: "{{ linux_security_baseline_verify_ssh_paths_effective.baseline_config }}"
+      control: baseline config
+      mode: "0600"
+    - path: "{{ linux_security_baseline_verify_ssh_paths_effective.banner }}"
+      control: login banner
+      mode: "0644"
+  loop_control:
+    label: "{{ item.path }}"
+  register: linux_security_baseline_verify_ssh_file_stats
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Record SSH file compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'ssh',
+            'control': item.item.control ~ ' file mode',
+            'compliant': (
+              item.stat.exists
+              and item.stat.pw_name == 'root'
+              and item.stat.gr_name == 'root'
+              and item.stat.mode == item.item.mode
+            ),
+            'expected': 'root:root ' ~ item.item.mode,
+            'actual': (
+              item.stat.pw_name | default('missing')
+            )
+            ~ ':'
+            ~ (
+              item.stat.gr_name | default('missing')
+            )
+            ~ ' '
+            ~ (
+              item.stat.mode | default('missing')
+            ),
+            'message': 'Verify SSH managed file ownership and permissions.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_ssh_file_stats.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item.path }}"
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Validate sshd configuration syntax
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_verify_ssh_paths_effective.sshd_binary }}"
+      - -t
+      - -f
+      - "{{ linux_security_baseline_verify_ssh_paths_effective.main_config }}"
+  register: linux_security_baseline_verify_sshd_syntax
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Read effective sshd configuration
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_verify_ssh_paths_effective.sshd_binary }}"
+      - -T
+      - -f
+      - "{{ linux_security_baseline_verify_ssh_paths_effective.main_config }}"
+  register: linux_security_baseline_verify_sshd_effective
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Record sshd syntax compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'ssh',
+            'control': 'sshd configuration syntax',
+            'compliant': linux_security_baseline_verify_sshd_syntax.rc == 0,
+            'expected': 'sshd -t returns 0',
+            'actual': (
+              'rc=' ~ linux_security_baseline_verify_sshd_syntax.rc
+              ~ ' '
+              ~ (
+                linux_security_baseline_verify_sshd_syntax.stderr
+                | default('')
+                | trim
+              )
+            ),
+            'message': 'Verify sshd can parse the effective configuration.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Record effective sshd directive compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'ssh',
+            'control': 'sshd ' ~ item.key,
+            'compliant': (
+              (
+                (
+                  linux_security_baseline_verify_sshd_effective.stdout_lines
+                  | default([])
+                  | select('match', '^' ~ item.key ~ '\s+')
+                  | list
+                  | first
+                  | default('missing', true)
+                )
+                | regex_replace('^' ~ item.key ~ '\s+', '')
+                | lower
+              )
+              == (item.value | string | lower)
+            ),
+            'expected': item.value | string,
+            'actual': (
+              (
+                linux_security_baseline_verify_sshd_effective.stdout_lines
+                | default([])
+                | select('match', '^' ~ item.key ~ '\s+')
+                | list
+                | first
+                | default('missing', true)
+              )
+              | regex_replace('^' ~ item.key ~ '\s+', '')
+            ),
+            'message': 'Verify effective sshd directive.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_ssh_settings_effective | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Read SSH baseline snippet
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_ssh_paths_effective.baseline_config }}"
+  register: linux_security_baseline_verify_ssh_baseline_slurp
+  when: >-
+    ansible_facts.distribution_major_version | int == 7
+    and linux_security_baseline_verify_ssh_require_protocol_on_rhel7 | bool
+  tags:
+    - baseline
+    - verify
+    - ssh
+
+- name: Record SSH protocol directive compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'ssh',
+            'control': 'Protocol 2 directive',
+            'compliant': (
+              ansible_facts.distribution_major_version | int >= 8
+              or (
+                'Protocol 2'
+                in (
+                  linux_security_baseline_verify_ssh_baseline_slurp.content
+                  | default('')
+                  | b64decode
+                )
+              )
+            ),
+            'expected': 'Protocol 2 on RHEL 7; omitted on newer OpenSSH when deprecated',
+            'actual': (
+              'not applicable'
+              if ansible_facts.distribution_major_version | int >= 8
+              else (
+                linux_security_baseline_verify_ssh_baseline_slurp.content
+                | default('')
+                | b64decode
+                | regex_search('(?m)^Protocol\s+.*$')
+                | default('missing', true)
+              )
+            ),
+            'message': 'Verify deprecated Protocol directive handling by platform.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - ssh

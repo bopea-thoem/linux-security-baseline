@@ -1,0 +1,373 @@
+---
+linux_security_baseline_auditd_enabled: true
+linux_security_baseline_auditd_install: true
+linux_security_baseline_auditd_manage_config: true
+linux_security_baseline_auditd_manage_rules: true
+linux_security_baseline_auditd_manage_service: true
+linux_security_baseline_auditd_verify: true
+linux_security_baseline_auditd_verify_fail_on_drift: true
+
+linux_security_baseline_auditd_packages:
+  - audit
+
+linux_security_baseline_auditd_service:
+  name: auditd
+  enabled: true
+  state: started
+
+linux_security_baseline_auditd_config:
+  path: /etc/audit/auditd.conf
+  owner: root
+  group: root
+  mode: "0640"
+  write_logs: true
+  log_file: /var/log/audit/audit.log
+  log_format: RAW
+  log_group: root
+  priority_boost: 4
+  flush: INCREMENTAL
+  freq: 20
+  num_logs: 5
+  disp_qos: lossy
+  dispatcher: /sbin/audispd
+  name_format: NONE
+  max_log_file: 6
+  max_log_file_action: keep_logs
+  space_left: 75
+  space_left_action: SYSLOG
+  action_mail_acct: root
+  admin_space_left: 50
+  admin_space_left_action: SUSPEND
+  disk_full_action: SUSPEND
+  disk_error_action: SUSPEND
+  tcp_listen_queue: 5
+  tcp_max_per_addr: 1
+  tcp_client_max_idle: 0
+  enable_krb5: false
+  krb5_principal: auditd
+
+linux_security_baseline_auditd_directories:
+  audit:
+    path: /etc/audit
+    owner: root
+    group: root
+    mode: "0750"
+  rules:
+    path: /etc/audit/rules.d
+    owner: root
+    group: root
+    mode: "0750"
+  log:
+    path: /var/log/audit
+    owner: root
+    group: root
+    mode: "0750"
+
+linux_security_baseline_auditd_rules_backend_rhel7: rules_d
+linux_security_baseline_auditd_rules_backend_rhel8_plus: rules_d
+linux_security_baseline_auditd_legacy_rules_file:
+  path: /etc/audit/audit.rules
+  owner: root
+  group: root
+  mode: "0640"
+  marker: "# {mark} ANSIBLE MANAGED BLOCK - Linux Security Baseline auditd"
+
+linux_security_baseline_auditd_rules_files:
+  base:
+    path: /etc/audit/rules.d/10-linux-security-baseline-base.rules
+    owner: root
+    group: root
+    mode: "0640"
+  main:
+    path: /etc/audit/rules.d/30-linux-security-baseline.rules
+    owner: root
+    group: root
+    mode: "0640"
+  finalize:
+    path: /etc/audit/rules.d/99-linux-security-baseline-finalize.rules
+    owner: root
+    group: root
+    mode: "0640"
+
+linux_security_baseline_auditd_augenrules_path: /sbin/augenrules
+linux_security_baseline_auditd_auditctl_path: /sbin/auditctl
+linux_security_baseline_auditd_reload_rules: true
+linux_security_baseline_auditd_reload_when_immutable: false
+
+linux_security_baseline_auditd_control_rules:
+  backlog_limit: 8192
+  failure_mode: 1
+  rate_limit: 0
+  backlog_wait_time: 60000
+
+linux_security_baseline_auditd_rules_immutable: false
+linux_security_baseline_auditd_uid_min: 1000
+linux_security_baseline_auditd_unset_auid: "4294967295"
+linux_security_baseline_auditd_architectures:
+  - b64
+  - b32
+
+linux_security_baseline_auditd_discover_privileged_commands: true
+linux_security_baseline_auditd_find_path: /usr/bin/find
+linux_security_baseline_auditd_privileged_command_discovery_paths:
+  - /usr
+  - /usr/local
+
+linux_security_baseline_auditd_watch_rules:
+  - path: /etc/localtime
+    permissions: wa
+    key: time-change
+    required: true
+  - path: /etc/group
+    permissions: wa
+    key: identity
+    required: true
+  - path: /etc/passwd
+    permissions: wa
+    key: identity
+    required: true
+  - path: /etc/gshadow
+    permissions: wa
+    key: identity
+    required: true
+  - path: /etc/shadow
+    permissions: wa
+    key: identity
+    required: true
+  - path: /etc/security/opasswd
+    permissions: wa
+    key: identity
+    required: false
+  - path: /etc/issue
+    permissions: wa
+    key: system-locale
+    required: false
+  - path: /etc/issue.net
+    permissions: wa
+    key: system-locale
+    required: false
+  - path: /etc/hosts
+    permissions: wa
+    key: system-locale
+    required: false
+  - path: /etc/sysconfig/network
+    permissions: wa
+    key: system-locale
+    required: false
+  - path: /etc/sysconfig/network-scripts
+    permissions: wa
+    key: system-locale
+    required: false
+  - path: /etc/selinux
+    permissions: wa
+    key: MAC-policy
+    required: false
+  - path: /usr/share/selinux
+    permissions: wa
+    key: MAC-policy
+    required: false
+  - path: /var/log/lastlog
+    permissions: wa
+    key: logins
+    required: false
+  - path: /var/log/faillog
+    permissions: wa
+    key: logins
+    required: false
+  - path: /var/log/tallylog
+    permissions: wa
+    key: logins
+    required: false
+  - path: /var/run/faillock
+    permissions: wa
+    key: logins
+    required: false
+  - path: /var/run/utmp
+    permissions: wa
+    key: session
+    required: false
+  - path: /var/log/wtmp
+    permissions: wa
+    key: session
+    required: false
+  - path: /var/log/btmp
+    permissions: wa
+    key: session
+    required: false
+  - path: /etc/sudoers
+    permissions: wa
+    key: scope
+    required: false
+  - path: /etc/sudoers.d
+    permissions: wa
+    key: scope
+    required: false
+  - path: /var/log/sudo.log
+    permissions: wa
+    key: actions
+    required: false
+  - path: /etc/audit
+    permissions: wa
+    key: auditconfig
+    required: true
+  - path: /etc/audit/auditd.conf
+    permissions: wa
+    key: auditconfig
+    required: true
+  - path: /etc/audit/rules.d
+    permissions: wa
+    key: auditconfig
+    required: false
+  - path: /var/log/audit
+    permissions: wa
+    key: auditlog
+    required: true
+  - path: /etc/modprobe.conf
+    permissions: wa
+    key: kernel_modules
+    required: false
+  - path: /etc/modprobe.d
+    permissions: wa
+    key: kernel_modules
+    required: false
+
+linux_security_baseline_auditd_arch_syscall_rules:
+  - key: time-change
+    action: always,exit
+    syscalls_by_arch:
+      b64:
+        - adjtimex
+        - settimeofday
+        - clock_settime
+      b32:
+        - adjtimex
+        - settimeofday
+        - stime
+        - clock_settime
+    filters: []
+  - key: system-locale
+    action: always,exit
+    syscalls:
+      - sethostname
+      - setdomainname
+    filters: []
+  - key: perm_mod
+    action: always,exit
+    syscalls:
+      - chmod
+      - fchmod
+      - fchmodat
+      - chown
+      - fchown
+      - fchownat
+      - lchown
+      - setxattr
+      - lsetxattr
+      - fsetxattr
+      - removexattr
+      - lremovexattr
+      - fremovexattr
+    filters:
+      - auid>=1000
+      - auid!=4294967295
+  - key: access
+    action: always,exit
+    syscalls:
+      - creat
+      - open
+      - openat
+      - open_by_handle_at
+      - truncate
+      - ftruncate
+    filters:
+      - exit=-EACCES
+      - auid>=1000
+      - auid!=4294967295
+  - key: access
+    action: always,exit
+    syscalls:
+      - creat
+      - open
+      - openat
+      - open_by_handle_at
+      - truncate
+      - ftruncate
+    filters:
+      - exit=-EPERM
+      - auid>=1000
+      - auid!=4294967295
+  - key: mounts
+    action: always,exit
+    syscalls:
+      - mount
+    filters:
+      - auid>=1000
+      - auid!=4294967295
+  - key: delete
+    action: always,exit
+    syscalls:
+      - unlink
+      - unlinkat
+      - rename
+      - renameat
+      - rmdir
+    filters:
+      - auid>=1000
+      - auid!=4294967295
+  - key: kernel_modules
+    action: always,exit
+    syscalls:
+      - init_module
+      - finit_module
+      - delete_module
+    filters:
+      - auid>=1000
+      - auid!=4294967295
+
+linux_security_baseline_auditd_exec_rules:
+  - path: /usr/bin/sudo
+    key: privileged
+  - path: /usr/bin/su
+    key: privileged
+  - path: /usr/bin/passwd
+    key: privileged
+  - path: /usr/bin/chage
+    key: privileged
+  - path: /usr/bin/gpasswd
+    key: privileged
+  - path: /usr/bin/newgrp
+    key: privileged
+  - path: /usr/bin/chsh
+    key: privileged
+  - path: /usr/bin/chfn
+    key: privileged
+  - path: /usr/bin/mount
+    key: privileged
+  - path: /usr/bin/umount
+    key: privileged
+  - path: /usr/bin/crontab
+    key: privileged
+  - path: /usr/libexec/openssh/ssh-keysign
+    key: privileged
+  - path: /usr/sbin/unix_chkpwd
+    key: privileged
+  - path: /usr/sbin/pam_timestamp_check
+    key: privileged
+  - path: /usr/sbin/userhelper
+    key: privileged
+  - path: /sbin/insmod
+    key: kernel_modules
+  - path: /sbin/rmmod
+    key: kernel_modules
+  - path: /sbin/modprobe
+    key: kernel_modules
+  - path: /usr/sbin/insmod
+    key: kernel_modules
+  - path: /usr/sbin/rmmod
+    key: kernel_modules
+  - path: /usr/sbin/modprobe
+    key: kernel_modules
+
+linux_security_baseline_auditd_tags:
+  - baseline
+  - auditd

@@ -1,0 +1,7 @@
+---
+linux_security_baseline_firewalld_domain: firewalld
+linux_security_baseline_firewalld_supported_major_versions:
+  - 7
+  - 8
+  - 9
+  - 10

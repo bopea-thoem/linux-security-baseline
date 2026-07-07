@@ -1,0 +1,18 @@
+---
+linux_security_baseline_gpg_enabled: true
+linux_security_baseline_gpg_manage_redhat_release_key: true
+linux_security_baseline_gpg_verify: true
+linux_security_baseline_gpg_verify_fail_on_drift: true
+linux_security_baseline_gpg_allow_remote_key_source: false
+
+linux_security_baseline_gpg_redhat_release_key:
+  path: /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+  url: https://security.access.redhat.com/data/fd431d51.txt
+  validate_certs: true
+
+linux_security_baseline_gpg_redhat_release_key_fingerprints:
+  - 567E347AD0044ADE55BA8A5F199E2F91FD431D51
+
+linux_security_baseline_gpg_tags:
+  - baseline
+  - gpg

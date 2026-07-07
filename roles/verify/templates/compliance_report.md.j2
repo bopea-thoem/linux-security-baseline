@@ -1,0 +1,39 @@
+# Linux Security Baseline Compliance Report
+
+Host: `{{ inventory_hostname }}`
+
+Distribution: `{{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}`
+
+Generated: `{{ linux_security_baseline_verify_generated_at }}`
+
+Profile: `{{ linux_security_baseline_profile | default('enterprise') }}`
+
+## Summary
+
+| Metric | Count |
+| --- | ---: |
+| Total controls | {{ linux_security_baseline_verify_total_count }} |
+| Compliant | {{ linux_security_baseline_verify_compliant_count }} |
+| Non-compliant | {{ linux_security_baseline_verify_noncompliant_count }} |
+
+## Findings
+
+| Status | Domain | Control | Expected | Actual |
+| --- | --- | --- | --- | --- |
+{% for result in linux_security_baseline_verify_results %}
+{% set status = 'PASS' if result.compliant else 'FAIL' %}
+{% set control = result.control | replace('|', '\\|') %}
+{% set expected = result.expected | string | replace('\n', ' ') | replace('|', '\\|') %}
+{% set actual = result.actual | string | replace('\n', ' ') | replace('|', '\\|') %}
+| {{ status }} | {{ result.domain }} | {{ control }} | {{ expected }} | {{ actual }} |
+{% endfor %}
+
+## Non-Compliant Controls
+
+{% if linux_security_baseline_verify_noncompliant_results | length == 0 %}
+All verified controls are compliant.
+{% else %}
+{% for result in linux_security_baseline_verify_noncompliant_results %}
+- `{{ result.domain }}`: {{ result.control }}. Expected `{{ result.expected }}`, actual `{{ result.actual }}`.
+{% endfor %}
+{% endif %}

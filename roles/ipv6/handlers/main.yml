@@ -1,0 +1,2 @@
+---
+# IPv6 hardening uses ansible.posix.sysctl reload-on-change; no handlers required.

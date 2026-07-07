@@ -1,0 +1,89 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for GPG role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_gpg_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for gpg role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for gpg role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_gpg_enabled | bool
+  tags:
+    - always
+    - baseline
+    - gpg
+    - gpg_verify
+
+- name: Check Red Hat release GPG key source file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_gpg_redhat_release_key.path }}"
+  register: linux_security_baseline_gpg_redhat_release_key_source_stat
+  when:
+    - linux_security_baseline_gpg_enabled | bool
+    - linux_security_baseline_gpg_manage_redhat_release_key | bool
+  tags:
+    - baseline
+    - gpg
+    - gpg_redhat_key
+
+- name: Assert Red Hat release GPG key source is available
+  ansible.builtin.assert:
+    that:
+      - >-
+        linux_security_baseline_gpg_redhat_release_key_source_stat.stat.exists
+        or linux_security_baseline_gpg_allow_remote_key_source | bool
+    fail_msg: >-
+      Red Hat release GPG key source file was not found at
+      {{ linux_security_baseline_gpg_redhat_release_key.path }}. Restore the
+      local Red Hat release key file or set
+      linux_security_baseline_gpg_allow_remote_key_source=true to use
+      {{ linux_security_baseline_gpg_redhat_release_key.url }}.
+  when:
+    - linux_security_baseline_gpg_enabled | bool
+    - linux_security_baseline_gpg_manage_redhat_release_key | bool
+  tags:
+    - baseline
+    - gpg
+    - gpg_redhat_key
+
+- name: Set effective Red Hat release GPG key source
+  ansible.builtin.set_fact:
+    linux_security_baseline_gpg_effective_redhat_release_key_source: >-
+      {{
+        linux_security_baseline_gpg_redhat_release_key.path
+        if linux_security_baseline_gpg_redhat_release_key_source_stat.stat.exists
+        else linux_security_baseline_gpg_redhat_release_key.url
+      }}
+  when:
+    - linux_security_baseline_gpg_enabled | bool
+    - linux_security_baseline_gpg_manage_redhat_release_key | bool
+  tags:
+    - baseline
+    - gpg
+    - gpg_redhat_key
+
+- name: Verify and install Red Hat release GPG key
+  ansible.builtin.rpm_key:
+    key: "{{ linux_security_baseline_gpg_effective_redhat_release_key_source }}"
+    fingerprint: "{{ linux_security_baseline_gpg_redhat_release_key_fingerprints }}"
+    state: present
+    validate_certs: "{{ linux_security_baseline_gpg_redhat_release_key.validate_certs | bool }}"
+  when:
+    - linux_security_baseline_gpg_enabled | bool
+    - linux_security_baseline_gpg_manage_redhat_release_key | bool
+  tags:
+    - baseline
+    - gpg
+    - gpg_redhat_key
+
+- name: Import GPG verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_gpg_enabled | bool
+  tags:
+    - baseline
+    - gpg
+    - gpg_verify
+    - verify

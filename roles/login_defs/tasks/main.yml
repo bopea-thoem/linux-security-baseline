@@ -1,0 +1,122 @@
+---
+- name: Assert supported Red Hat Enterprise Linux platform for login_defs role
+  ansible.builtin.assert:
+    that:
+      - ansible_facts.distribution == linux_security_baseline_target_distribution
+      - ansible_facts.distribution_major_version | int in linux_security_baseline_login_defs_supported_major_versions
+    fail_msg: >-
+      Unsupported platform detected for login_defs role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+    success_msg: >-
+      Supported platform detected for login_defs role:
+      {{ ansible_facts.distribution }} {{ ansible_facts.distribution_version }}.
+  when: linux_security_baseline_login_defs_enabled | bool
+  tags:
+    - always
+    - baseline
+    - login_defs
+    - login_defs_verify
+
+- name: Configure login.defs ownership and permissions
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_login_defs_file.path }}"
+    state: file
+    owner: "{{ linux_security_baseline_login_defs_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_file.mode }}"
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_manage_file | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_file
+
+- name: Configure login.defs password aging and umask settings
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_login_defs_file.path }}"
+    regexp: "^\\s*{{ item.key }}\\s+"
+    line: "{{ item.key }}\t{{ item.value }}"
+    owner: "{{ linux_security_baseline_login_defs_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_file.mode }}"
+    create: false
+  loop: "{{ linux_security_baseline_login_defs_settings | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_manage_file | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_file
+
+- name: Gather local passwd database
+  ansible.builtin.getent:
+    database: passwd
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_update_existing_users | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_users
+
+- name: Gather local shadow database
+  ansible.builtin.getent:
+    database: shadow
+  no_log: true
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_update_existing_users | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_users
+
+- name: Update existing local interactive users safely
+  ansible.builtin.command:
+    argv:
+      - "{{ linux_security_baseline_login_defs_user_update.chage_path }}"
+      - -M
+      - "{{ linux_security_baseline_login_defs_settings.PASS_MAX_DAYS }}"
+      - -m
+      - "{{ linux_security_baseline_login_defs_settings.PASS_MIN_DAYS }}"
+      - -W
+      - "{{ linux_security_baseline_login_defs_settings.PASS_WARN_AGE }}"
+      - "{{ item.key }}"
+  loop: "{{ ansible_facts.getent_passwd | dict2items }}"
+  loop_control:
+    label: "{{ item.key }}"
+  changed_when: true
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_update_existing_users | bool
+    - item.key not in linux_security_baseline_login_defs_user_update.excluded_users
+    - >-
+      item.key == 'root'
+      and linux_security_baseline_login_defs_user_update.include_root | bool
+      or item.value[1] | int >= linux_security_baseline_login_defs_user_update.min_uid | int
+    - item.value[5] not in linux_security_baseline_login_defs_user_update.excluded_shells
+    - item.key in ansible_facts.getent_shadow
+    - >-
+      ansible_facts.getent_shadow[item.key][2] | int
+      != linux_security_baseline_login_defs_settings.PASS_MIN_DAYS | int
+      or ansible_facts.getent_shadow[item.key][3] | int
+      != linux_security_baseline_login_defs_settings.PASS_MAX_DAYS | int
+      or ansible_facts.getent_shadow[item.key][4] | int
+      != linux_security_baseline_login_defs_settings.PASS_WARN_AGE | int
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_users
+
+- name: Import login_defs verification tasks
+  ansible.builtin.import_tasks: verify.yml
+  when: linux_security_baseline_login_defs_enabled | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_verify
+    - verify

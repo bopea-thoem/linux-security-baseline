@@ -1,0 +1,119 @@
+---
+- name: Verify cron and at packages are installed
+  ansible.builtin.package:
+    name: "{{ linux_security_baseline_cron_packages }}"
+    state: present
+  check_mode: true
+  register: linux_security_baseline_cron_package_verify_result
+  failed_when:
+    - linux_security_baseline_cron_verify_fail_on_drift | bool
+    - linux_security_baseline_cron_package_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_cron_verify | bool
+    - linux_security_baseline_cron_install | bool
+  tags:
+    - baseline
+    - cron
+    - cron_package
+    - cron_verify
+    - verify
+
+- name: Verify cron files and directories
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: "{{ item.state }}"
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+  loop: "{{ linux_security_baseline_cron_managed_paths }}"
+  loop_control:
+    label: "{{ item.path }}"
+  check_mode: true
+  register: linux_security_baseline_cron_paths_verify_result
+  failed_when:
+    - linux_security_baseline_cron_verify_fail_on_drift | bool
+    - linux_security_baseline_cron_paths_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_cron_verify | bool
+    - linux_security_baseline_cron_manage_files | bool
+  tags:
+    - baseline
+    - cron
+    - cron_permissions
+    - cron_verify
+    - verify
+
+- name: Verify cron and at allow file ownership
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: touch
+    owner: "{{ item.owner }}"
+    group: "{{ item.group }}"
+    mode: "{{ item.mode }}"
+    modification_time: preserve
+    access_time: preserve
+  loop: "{{ linux_security_baseline_cron_allow_files }}"
+  loop_control:
+    label: "{{ item.path }}"
+  check_mode: true
+  register: linux_security_baseline_cron_allow_files_verify_result
+  failed_when:
+    - linux_security_baseline_cron_verify_fail_on_drift | bool
+    - linux_security_baseline_cron_allow_files_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_cron_verify | bool
+    - linux_security_baseline_cron_manage_access | bool
+  tags:
+    - baseline
+    - cron
+    - cron_access
+    - cron_verify
+    - verify
+
+- name: Verify cron and at allowed users
+  ansible.builtin.lineinfile:
+    path: "{{ item.0.path }}"
+    line: "{{ item.1 }}"
+    owner: "{{ item.0.owner }}"
+    group: "{{ item.0.group }}"
+    mode: "{{ item.0.mode }}"
+    create: true
+  loop: "{{ linux_security_baseline_cron_allow_files | subelements('users') }}"
+  loop_control:
+    label: "{{ item.0.path }}:{{ item.1 }}"
+  check_mode: true
+  register: linux_security_baseline_cron_allow_users_verify_result
+  failed_when:
+    - linux_security_baseline_cron_verify_fail_on_drift | bool
+    - linux_security_baseline_cron_allow_users_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_cron_verify | bool
+    - linux_security_baseline_cron_manage_access | bool
+  tags:
+    - baseline
+    - cron
+    - cron_access
+    - cron_verify
+    - verify
+
+- name: Verify cron and at deny files are absent
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: absent
+  loop: "{{ linux_security_baseline_cron_deny_files }}"
+  loop_control:
+    label: "{{ item }}"
+  check_mode: true
+  register: linux_security_baseline_cron_deny_files_verify_result
+  failed_when:
+    - linux_security_baseline_cron_verify_fail_on_drift | bool
+    - linux_security_baseline_cron_deny_files_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_cron_verify | bool
+    - linux_security_baseline_cron_manage_access | bool
+  tags:
+    - baseline
+    - cron
+    - cron_access
+    - cron_verify
+    - verify

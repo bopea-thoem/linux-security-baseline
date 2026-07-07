@@ -1,0 +1,6 @@
+## Ansible managed: Linux Security Baseline audit control rules.
+
+-b {{ linux_security_baseline_auditd_control_rules.backlog_limit }}
+-f {{ linux_security_baseline_auditd_control_rules.failure_mode }}
+-r {{ linux_security_baseline_auditd_control_rules.rate_limit }}
+--backlog_wait_time {{ linux_security_baseline_auditd_control_rules.backlog_wait_time }}
