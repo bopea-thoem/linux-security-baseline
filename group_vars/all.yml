@@ -9,6 +9,7 @@ linux_security_baseline_audit_only: true
 linux_security_baseline_manage_services: true
 linux_security_baseline_reboot_allowed: false
 linux_security_baseline_create_backups: true
+linux_security_baseline_verify_fail_on_noncompliance: false
 linux_security_baseline_backup_suffix: ".pre_lsb"
 
 linux_security_baseline_target_distribution: RedHat
