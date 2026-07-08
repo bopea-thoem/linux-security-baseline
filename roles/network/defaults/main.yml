@@ -3,8 +3,7 @@ linux_security_baseline_network_enabled: true
 linux_security_baseline_network_manage_sysctl: true
 linux_security_baseline_network_verify: true
 linux_security_baseline_network_verify_fail_on_drift: true
-linux_security_baseline_network_sysctl_file: >-
-  /etc/sysctl.d/99-linux-security-baseline-network.conf
+linux_security_baseline_network_sysctl_file: /etc/sysctl.conf
 
 linux_security_baseline_network_ipv4_sysctl_settings:
   - name: net.ipv4.ip_forward

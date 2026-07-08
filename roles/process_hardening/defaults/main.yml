@@ -21,8 +21,7 @@ linux_security_baseline_process_hardening_limits:
     limit_item: core
     value: "0"
 
-linux_security_baseline_process_hardening_sysctl_file: >-
-  /etc/sysctl.d/99-linux-security-baseline-process.conf
+linux_security_baseline_process_hardening_sysctl_file: /etc/sysctl.conf
 linux_security_baseline_process_hardening_sysctl_settings:
   - name: fs.suid_dumpable
     value: "0"
