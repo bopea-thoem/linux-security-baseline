@@ -12,6 +12,7 @@ linux_security_baseline_aide_restart_crond_on_change: false
 linux_security_baseline_aide_packages:
   - aide
   - cronie
+  - crond
 
 linux_security_baseline_aide_binary: /usr/sbin/aide
 
@@ -39,7 +40,8 @@ linux_security_baseline_aide_cron:
   path_env: /sbin:/bin:/usr/sbin:/usr/bin
   command: /usr/sbin/aide --check
 
-linux_security_baseline_aide_crond_service: crond
+linux_security_baseline_aide_crond_service: >-
+  {{ 'crond' if ansible_facts.distribution_major_version | int < 10 else 'crond' }}
 
 linux_security_baseline_aide_tags:
   - baseline

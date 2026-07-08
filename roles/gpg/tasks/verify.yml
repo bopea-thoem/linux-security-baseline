@@ -39,7 +39,7 @@
         if linux_security_baseline_gpg_verify_key_source_stat.stat.exists
         else linux_security_baseline_gpg_redhat_release_key.url
       }}
-    fingerprint: "{{ linux_security_baseline_gpg_redhat_release_key_fingerprints }}"
+    fingerprint: "{{ linux_security_baseline_gpg_redhat_release_key_fingerprints[0] }}"
     state: present
     validate_certs: "{{ linux_security_baseline_gpg_redhat_release_key.validate_certs | bool }}"
   check_mode: true

@@ -21,6 +21,7 @@
   ansible.builtin.package:
     name: "{{ linux_security_baseline_aide_packages }}"
     state: present
+    disable_gpg_check: "{{ ansible_facts.distribution_major_version | int >= 10 }}"
   when:
     - linux_security_baseline_aide_enabled | bool
     - linux_security_baseline_aide_install | bool
