@@ -12,7 +12,6 @@ linux_security_baseline_aide_restart_crond_on_change: false
 linux_security_baseline_aide_packages:
   - aide
   - cronie
-  - crond
 
 linux_security_baseline_aide_binary: /usr/sbin/aide
 
