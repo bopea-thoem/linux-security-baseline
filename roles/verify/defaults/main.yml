@@ -31,6 +31,12 @@ linux_security_baseline_verify_disabled_kernel_modules:
   - squashfs
   - udf
 
+linux_security_baseline_verify_disabled_install_true_kernel_modules:
+  - dccp
+  - sctp
+  - rds
+  - tipc
+
 linux_security_baseline_verify_sysctl_controls:
   - domain: process_hardening
     name: fs.suid_dumpable
@@ -96,7 +102,7 @@ linux_security_baseline_verify_sysctl_controls:
     name: net.ipv6.conf.default.accept_redirects
     expected: "0"
 
-linux_security_baseline_verify_ipv6_disable_enabled: false
+linux_security_baseline_verify_ipv6_disable_enabled: true
 linux_security_baseline_verify_ipv6_disable_controls:
   - domain: ipv6
     name: net.ipv6.conf.all.disable_ipv6
@@ -111,6 +117,17 @@ linux_security_baseline_verify_auditd_service:
   name: auditd
   state: running
   enabled: true
+linux_security_baseline_verify_auditd_sudo_log_file:
+  path: /var/log/sudo.log
+  owner: root
+  group: root
+  mode: "0600"
+linux_security_baseline_verify_auditd_grub_file:
+  path: /etc/default/grub
+  owner: root
+  group: root
+  mode: "0644"
+linux_security_baseline_verify_auditd_grub_audit_argument: audit=1
 linux_security_baseline_verify_auditd_config:
   path: /etc/audit/auditd.conf
   mode: "0640"
@@ -129,11 +146,14 @@ linux_security_baseline_verify_auditd_required_control_rules:
   - "-f 1"
   - "-r 0"
   - "--backlog_wait_time 60000"
+linux_security_baseline_verify_auditd_required_rules:
+  - "-w /var/log/sudo.log -p wa -k actions"
 linux_security_baseline_verify_auditd_required_keys:
   - time-change
   - identity
   - auditconfig
   - auditlog
+  - actions
   - kernel_modules
   - perm_mod
   - access
@@ -282,8 +302,20 @@ linux_security_baseline_verify_login_defs_file:
 linux_security_baseline_verify_login_defs_settings:
   PASS_MAX_DAYS: "90"
   PASS_MIN_DAYS: "7"
-  PASS_WARN_AGE: "14"
+  PASS_WARN_AGE: "7"
   UMASK: "027"
+linux_security_baseline_verify_login_defs_bashrc_file:
+  path: /etc/bashrc
+  owner: root
+  group: root
+  mode: "0644"
+linux_security_baseline_verify_login_defs_bashrc_umask: "0773"
+linux_security_baseline_verify_login_defs_profile_umask_file:
+  path: /etc/profile.d/umask.sh
+  owner: root
+  group: root
+  mode: "0644"
+linux_security_baseline_verify_login_defs_profile_umask: "0775"
 linux_security_baseline_verify_login_defs_user_update:
   min_uid: 1000
   include_root: false

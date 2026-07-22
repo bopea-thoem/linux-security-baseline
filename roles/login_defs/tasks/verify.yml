@@ -48,6 +48,80 @@
     - login_defs_verify
     - verify
 
+- name: Verify /etc/bashrc shell umask
+  ansible.builtin.blockinfile:
+    path: "{{ linux_security_baseline_login_defs_bashrc_file.path }}"
+    marker: "{{ linux_security_baseline_login_defs_bashrc_file.marker }}"
+    block: "umask {{ linux_security_baseline_login_defs_bashrc_umask }}"
+    owner: "{{ linux_security_baseline_login_defs_bashrc_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_bashrc_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_bashrc_file.mode }}"
+    create: true
+  check_mode: true
+  register: linux_security_baseline_login_defs_bashrc_umask_verify_result
+  failed_when:
+    - linux_security_baseline_login_defs_verify_fail_on_drift | bool
+    - linux_security_baseline_login_defs_bashrc_umask_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_manage_shell_umask | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+    - login_defs_verify
+    - verify
+
+- name: Verify profile.d directory
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_login_defs_profile_directory.path }}"
+    state: directory
+    owner: "{{ linux_security_baseline_login_defs_profile_directory.owner }}"
+    group: "{{ linux_security_baseline_login_defs_profile_directory.group }}"
+    mode: "{{ linux_security_baseline_login_defs_profile_directory.mode }}"
+  check_mode: true
+  register: linux_security_baseline_login_defs_profile_directory_verify_result
+  failed_when:
+    - linux_security_baseline_login_defs_verify_fail_on_drift | bool
+    - linux_security_baseline_login_defs_profile_directory_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_manage_shell_umask | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+    - login_defs_verify
+    - verify
+
+- name: Verify CIS profile umask script
+  ansible.builtin.copy:
+    dest: "{{ linux_security_baseline_login_defs_profile_umask_file.path }}"
+    content: |
+      # Ansible managed: Linux Security Baseline CIS profile umask.
+      umask {{ linux_security_baseline_login_defs_profile_umask }}
+    owner: "{{ linux_security_baseline_login_defs_profile_umask_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_profile_umask_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_profile_umask_file.mode }}"
+  check_mode: true
+  register: linux_security_baseline_login_defs_profile_umask_verify_result
+  failed_when:
+    - linux_security_baseline_login_defs_verify_fail_on_drift | bool
+    - linux_security_baseline_login_defs_profile_umask_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_manage_shell_umask | bool
+    - >-
+      not
+      linux_security_baseline_login_defs_profile_directory_verify_result.changed
+      | default(false)
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+    - login_defs_verify
+    - verify
+
 - name: Gather local passwd database for login_defs verification
   ansible.builtin.getent:
     database: passwd

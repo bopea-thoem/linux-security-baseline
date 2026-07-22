@@ -12,11 +12,14 @@ Filesystem hardening role for the Linux Security Baseline.
 ## Implemented Controls
 
 - Mount `/dev/shm` as `tmpfs` with `nodev`, `nosuid`, and `noexec`.
-- Disable unsupported filesystem kernel modules with managed modprobe policy.
-- Unload prohibited filesystem kernel modules when they are loaded.
+- Disable unsupported filesystem and protocol kernel modules with managed
+  modprobe policy.
+- Unload prohibited kernel modules when they are loaded.
 - Verify `/dev/shm`, modprobe policy, and loaded module state without shell.
 
 Disabled modules:
+
+Filesystem modules:
 
 - `cramfs`
 - `freevxfs`
@@ -25,6 +28,13 @@ Disabled modules:
 - `hfsplus`
 - `squashfs`
 - `udf`
+
+Protocol modules with `/bin/true` install overrides:
+
+- `dccp`
+- `sctp`
+- `rds`
+- `tipc`
 
 ## Modules Used
 
@@ -64,6 +74,9 @@ opts:
 
 `linux_security_baseline_filesystem_disabled_modules` controls the prohibited
 filesystem module list.
+
+`linux_security_baseline_filesystem_disabled_install_true_modules` controls
+additional prohibited modules that use `install <module> /bin/true` policy.
 
 ## Tags
 

@@ -1,12 +1,13 @@
 # ipv6
 
 Configures IPv6 sysctl controls for the Linux Security Baseline.
+Settings are written to `/etc/sysctl.conf` and applied immediately at runtime.
 
 ## Controls
 
 - Disables IPv6 router advertisements
 - Disables IPv6 redirects
-- Optionally disables IPv6 with `linux_security_baseline_ipv6_disable_ipv6`
+- Disables IPv6 with `linux_security_baseline_ipv6_disable_ipv6`
 
 ## Variables
 

@@ -3,8 +3,8 @@
 ## filesystem
 
 Hardens `/dev/shm` with `nodev`, `nosuid`, and `noexec`. Disables and unloads
-the filesystem modules `cramfs`, `freevxfs`, `jffs2`, `hfs`, `hfsplus`,
-`squashfs`, and `udf`.
+the prohibited modules `cramfs`, `freevxfs`, `jffs2`, `hfs`, `hfsplus`,
+`squashfs`, `udf`, `dccp`, `sctp`, `rds`, and `tipc`.
 
 ## gpg
 
@@ -28,8 +28,8 @@ cookies.
 
 ## ipv6
 
-Configures IPv6 router advertisement and redirect controls. IPv6 disablement is
-available through an optional variable.
+Configures IPv6 router advertisement and redirect controls, and disables IPv6
+through sysctl by default.
 
 ## firewalld
 
@@ -42,8 +42,9 @@ only when configuration changes.
 
 ## auditd
 
-Installs auditd, manages `auditd.conf`, writes baseline audit rules under
-`/etc/audit/rules.d`, preserves custom rules, and reloads audit rules safely.
+Installs auditd, ensures `audit=1` is present in `/etc/default/grub`, manages
+`auditd.conf`, writes baseline audit rules under `/etc/audit/rules.d`,
+preserves custom rules, and reloads audit rules safely.
 
 ## cron
 
@@ -63,8 +64,9 @@ pwquality, faillock, password history, password complexity, and lockout policy.
 
 ## login_defs
 
-Configures password aging and umask settings in `/etc/login.defs` and safely
-updates existing local interactive users.
+Configures password aging and umask settings in `/etc/login.defs`, shell UMASK
+policy in `/etc/bashrc` and `/etc/profile.d/umask.sh`, and safely updates
+existing local interactive users.
 
 ## verify
 

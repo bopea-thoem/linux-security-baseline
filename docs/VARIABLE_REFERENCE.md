@@ -25,16 +25,31 @@ Role execution is controlled under `linux_security_baseline_roles` in
 | `linux_security_baseline_verify_report_json` | `{{ report_dir }}/compliance_report.json` | JSON report path. |
 | `linux_security_baseline_verify_report_markdown` | `{{ report_dir }}/compliance_report.md` | Markdown report path. |
 | `linux_security_baseline_verify_include_timestamp` | `false` | Adds a run timestamp to reports when enabled. |
-| `linux_security_baseline_verify_ipv6_disable_enabled` | `false` | Verifies `disable_ipv6=1` when the site requires IPv6 disabled. |
+| `linux_security_baseline_verify_ipv6_disable_enabled` | `true` | Verifies `disable_ipv6=1` unless the site overrides IPv6 disablement. |
 
 ## Sysctl Role Variables
 
 | Variable | Default | Purpose |
 | --- | --- | --- |
-| `linux_security_baseline_process_hardening_sysctl_file` | `/etc/sysctl.d/99-linux-security-baseline-process.conf` | Process hardening sysctl file. |
-| `linux_security_baseline_network_sysctl_file` | `/etc/sysctl.d/99-linux-security-baseline-network.conf` | IPv4 sysctl file. |
-| `linux_security_baseline_ipv6_sysctl_file` | `/etc/sysctl.d/99-linux-security-baseline-ipv6.conf` | IPv6 sysctl file. |
-| `linux_security_baseline_ipv6_disable_ipv6` | `false` | Adds `disable_ipv6=1` controls when required by policy. |
+| `linux_security_baseline_process_hardening_sysctl_file` | `/etc/sysctl.conf` | Process hardening sysctl file. |
+| `linux_security_baseline_network_sysctl_file` | `/etc/sysctl.conf` | IPv4 sysctl file. |
+| `linux_security_baseline_ipv6_sysctl_file` | `/etc/sysctl.conf` | IPv6 sysctl file. |
+| `linux_security_baseline_ipv6_disable_ipv6` | `true` | Adds `disable_ipv6=1` controls unless disabled by site policy. |
+
+## Auditd Role Variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `linux_security_baseline_auditd_manage_grub` | `true` | Manages the audit kernel argument in `/etc/default/grub`. |
+| `linux_security_baseline_auditd_grub_audit_argument` | `audit=1` | Required audit kernel argument for `GRUB_CMDLINE_LINUX`. |
+
+## Login Defs Role Variables
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `linux_security_baseline_login_defs_manage_shell_umask` | `true` | Manages shell UMASK policy in `/etc/bashrc` and `/etc/profile.d/umask.sh`. |
+| `linux_security_baseline_login_defs_bashrc_umask` | `0773` | UMASK applied from `/etc/bashrc`. |
+| `linux_security_baseline_login_defs_profile_umask` | `0775` | UMASK applied from `/etc/profile.d/umask.sh`. |
 
 ## Domain Defaults
 

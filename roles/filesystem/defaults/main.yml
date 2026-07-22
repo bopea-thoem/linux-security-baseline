@@ -35,6 +35,12 @@ linux_security_baseline_filesystem_disabled_modules:
   - squashfs
   - udf
 
+linux_security_baseline_filesystem_disabled_install_true_modules:
+  - dccp
+  - sctp
+  - rds
+  - tipc
+
 linux_security_baseline_filesystem_tags:
   - baseline
   - filesystem

@@ -64,6 +64,66 @@
     - auditd_verify
     - verify
 
+- name: Build GRUB_CMDLINE_LINUX audit kernel argument for verification
+  ansible.builtin.import_tasks: grub_cmdline_facts.yml
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_grub | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_grub
+    - auditd_verify
+    - verify
+
+- name: Verify GRUB_CMDLINE_LINUX audit kernel argument
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_auditd_grub_file.path }}"
+    regexp: "^GRUB_CMDLINE_LINUX="
+    line: 'GRUB_CMDLINE_LINUX="{{ linux_security_baseline_auditd_grub_cmdline_effective }}"'
+    owner: "{{ linux_security_baseline_auditd_grub_file.owner }}"
+    group: "{{ linux_security_baseline_auditd_grub_file.group }}"
+    mode: "{{ linux_security_baseline_auditd_grub_file.mode }}"
+    create: true
+  check_mode: true
+  register: linux_security_baseline_auditd_grub_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_grub_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_grub | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_grub
+    - auditd_verify
+    - verify
+
+- name: Verify sudo log file exists for audit watch
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_auditd_sudo_log_file.path }}"
+    state: touch
+    owner: "{{ linux_security_baseline_auditd_sudo_log_file.owner }}"
+    group: "{{ linux_security_baseline_auditd_sudo_log_file.group }}"
+    mode: "{{ linux_security_baseline_auditd_sudo_log_file.mode }}"
+    modification_time: preserve
+    access_time: preserve
+  check_mode: true
+  register: linux_security_baseline_auditd_sudo_log_verify_result
+  failed_when:
+    - linux_security_baseline_auditd_verify_fail_on_drift | bool
+    - linux_security_baseline_auditd_sudo_log_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_auditd_verify | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+    - auditd_verify
+    - verify
+
 - name: Check audit watch paths for verification
   ansible.builtin.stat:
     path: "{{ item.path }}"

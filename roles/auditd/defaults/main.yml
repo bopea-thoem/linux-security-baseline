@@ -4,6 +4,7 @@ linux_security_baseline_auditd_install: true
 linux_security_baseline_auditd_manage_config: true
 linux_security_baseline_auditd_manage_rules: true
 linux_security_baseline_auditd_manage_service: true
+linux_security_baseline_auditd_manage_grub: true
 linux_security_baseline_auditd_verify: true
 linux_security_baseline_auditd_verify_fail_on_drift: true
 
@@ -14,6 +15,19 @@ linux_security_baseline_auditd_service:
   name: auditd
   enabled: true
   state: started
+
+linux_security_baseline_auditd_sudo_log_file:
+  path: /var/log/sudo.log
+  owner: root
+  group: root
+  mode: "0600"
+
+linux_security_baseline_auditd_grub_file:
+  path: /etc/default/grub
+  owner: root
+  group: root
+  mode: "0644"
+linux_security_baseline_auditd_grub_audit_argument: audit=1
 
 linux_security_baseline_auditd_config:
   path: /etc/audit/auditd.conf
@@ -205,7 +219,7 @@ linux_security_baseline_auditd_watch_rules:
   - path: /var/log/sudo.log
     permissions: wa
     key: actions
-    required: false
+    required: true
   - path: /etc/audit
     permissions: wa
     key: auditconfig

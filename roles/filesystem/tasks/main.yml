@@ -17,7 +17,7 @@
     - filesystem
     - filesystem_dev_shm
 
-- name: Configure disabled filesystem kernel modules
+- name: Configure disabled kernel module policy
   ansible.builtin.template:
     src: "{{ linux_security_baseline_filesystem_modprobe_template }}"
     dest: "{{ linux_security_baseline_filesystem_modprobe_conf.path }}"
@@ -32,11 +32,15 @@
     - filesystem
     - filesystem_kernel_modules
 
-- name: Unload disabled filesystem kernel modules
+- name: Unload disabled kernel modules
   community.general.modprobe:
     name: "{{ item }}"
     state: absent
-  loop: "{{ linux_security_baseline_filesystem_disabled_modules }}"
+  loop: >-
+    {{
+      linux_security_baseline_filesystem_disabled_modules
+      + linux_security_baseline_filesystem_disabled_install_true_modules
+    }}
   loop_control:
     label: "{{ item }}"
   register: linux_security_baseline_filesystem_module_unload_result
@@ -78,7 +82,7 @@
     - filesystem_verify
     - verify
 
-- name: Verify disabled filesystem kernel module configuration
+- name: Verify disabled kernel module policy configuration
   ansible.builtin.template:
     src: "{{ linux_security_baseline_filesystem_modprobe_template }}"
     dest: "{{ linux_security_baseline_filesystem_modprobe_conf.path }}"
@@ -101,11 +105,15 @@
     - filesystem_verify
     - verify
 
-- name: Verify disabled filesystem kernel modules are unloaded
+- name: Verify disabled kernel modules are unloaded
   community.general.modprobe:
     name: "{{ item }}"
     state: absent
-  loop: "{{ linux_security_baseline_filesystem_disabled_modules }}"
+  loop: >-
+    {{
+      linux_security_baseline_filesystem_disabled_modules
+      + linux_security_baseline_filesystem_disabled_install_true_modules
+    }}
   loop_control:
     label: "{{ item }}"
   check_mode: true

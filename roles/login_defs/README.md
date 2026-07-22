@@ -12,6 +12,8 @@ Enterprise `login.defs` role for the Linux Security Baseline.
 ## Implemented Controls
 
 - Configure `/etc/login.defs` ownership and permissions.
+- Configure shell UMASK policy in `/etc/bashrc`.
+- Create `/etc/profile.d/umask.sh` for CIS shell profile UMASK policy.
 - Configure:
   - `PASS_MAX_DAYS`
   - `PASS_MIN_DAYS`
@@ -39,8 +41,10 @@ linux_security_baseline_login_defs_user_update:
 ```yaml
 PASS_MAX_DAYS: "90"
 PASS_MIN_DAYS: "7"
-PASS_WARN_AGE: "14"
+PASS_WARN_AGE: "7"
 UMASK: "027"
+linux_security_baseline_login_defs_bashrc_umask: "0773"
+linux_security_baseline_login_defs_profile_umask: "0775"
 ```
 
 ## Tags
@@ -48,6 +52,7 @@ UMASK: "027"
 - `baseline`
 - `login_defs`
 - `login_defs_file`
+- `login_defs_shell`
 - `login_defs_users`
 - `login_defs_verify`
 - `verify`

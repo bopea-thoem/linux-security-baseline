@@ -10,24 +10,23 @@ versions.
 
 ## Implemented Roles
 
-- `filesystem`: `/dev/shm` hardening and filesystem kernel module disablement
+- `filesystem`: `/dev/shm` hardening and prohibited kernel module disablement
 - `gpg`: Red Hat release GPG key verification and installation
 - `aide`: AIDE installation, first-time database initialization, daily checks
 - `process_hardening`: core dump disablement and `fs.suid_dumpable=0`
 - `network`: IPv4 sysctl network baseline
-- `ipv6`: IPv6 redirect/router-advertisement controls and optional disablement
+- `ipv6`: IPv6 redirect/router-advertisement controls and disablement
 - `firewalld`: package installation and service enablement
 - `rsyslog`: package, service, and managed `rsyslog.conf`
-- `auditd`: package, service, configuration, and managed audit rules
+- `auditd`: package, service, boot argument, configuration, and managed audit rules
 - `cron`: cron and at file permissions and access control
 - `ssh`: OpenSSH hardening with version-aware deprecated directive handling
 - `pam`: RHEL 7 authconfig and RHEL 8+ authselect password policy controls
 - `login_defs`: password aging, umask, and existing user aging updates
 - `verify`: compliance evidence collection, JSON/Markdown reports, fail on drift
 
-The current kernel module controls disable filesystem drivers and are implemented
-by the `filesystem` role. The `kernel_modules` role is reserved for future
-non-filesystem module controls.
+The current kernel module controls are implemented by the `filesystem` role.
+The `kernel_modules` role is reserved for future standalone module controls.
 
 ## Project Layout
 

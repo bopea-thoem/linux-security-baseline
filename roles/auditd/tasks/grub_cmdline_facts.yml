@@ -1,0 +1,52 @@
+---
+- name: Check GRUB default file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_auditd_grub_file.path }}"
+  register: linux_security_baseline_auditd_grub_file_stat
+
+- name: Read GRUB default file
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_auditd_grub_file.path }}"
+  register: linux_security_baseline_auditd_grub_slurp
+  when: linux_security_baseline_auditd_grub_file_stat.stat.exists
+
+- name: Set current GRUB_CMDLINE_LINUX value
+  ansible.builtin.set_fact:
+    linux_security_baseline_auditd_grub_cmdline_current: >-
+      {{
+        (
+          (
+            linux_security_baseline_auditd_grub_slurp
+            | default({})
+          ).content
+          | default('')
+          | b64decode
+          | regex_search('(?m)^GRUB_CMDLINE_LINUX=.*$')
+          | default('GRUB_CMDLINE_LINUX=""', true)
+        )
+        | regex_replace('^GRUB_CMDLINE_LINUX=', '')
+        | trim
+        | regex_replace('^"(.*)"$', '\\1')
+        | regex_replace("^'(.*)'$", '\\1')
+      }}
+
+- name: Remove existing audit kernel argument from GRUB_CMDLINE_LINUX
+  ansible.builtin.set_fact:
+    linux_security_baseline_auditd_grub_cmdline_without_audit: >-
+      {{
+        linux_security_baseline_auditd_grub_cmdline_current
+        | regex_replace('(^|\\s+)audit=\\S+', ' ')
+        | regex_replace('\\s+', ' ')
+        | trim
+      }}
+
+- name: Set effective GRUB_CMDLINE_LINUX value
+  ansible.builtin.set_fact:
+    linux_security_baseline_auditd_grub_cmdline_effective: >-
+      {{
+        (
+          linux_security_baseline_auditd_grub_cmdline_without_audit
+          ~ ' '
+          ~ linux_security_baseline_auditd_grub_audit_argument
+        ) | trim
+      }}

@@ -9,7 +9,7 @@ fails the play when one or more controls are non-compliant.
 ## Verified Domains
 
 - Filesystem `/dev/shm` hardening
-- Disabled filesystem kernel modules
+- Disabled filesystem and protocol kernel modules
 - Red Hat GPG key presence
 - Process hardening sysctl values
 - IPv4 and IPv6 network sysctl values

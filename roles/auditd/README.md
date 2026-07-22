@@ -13,6 +13,8 @@ Enterprise auditd role for the Linux Security Baseline.
 
 - Install the Red Hat `audit` package.
 - Manage `/etc/audit/auditd.conf`.
+- Ensure `audit=1` is present in `/etc/default/grub`.
+- Ensure `/var/log/sudo.log` exists for sudo action audit watches.
 - Enable and start the `auditd` service.
 - Manage persistent audit rules.
 - Reload audit rules safely through handlers.
@@ -50,7 +52,7 @@ The generated baseline rules cover:
 - MAC policy changes
 - Login and logout records
 - Session records
-- Sudoers and sudo action logging where paths exist
+- Sudoers and sudo action logging
 - Audit configuration and audit log tampering
 - Permission and ownership changes
 - Failed file access attempts
@@ -88,6 +90,7 @@ rules safely requires a reboot.
 - `baseline`
 - `auditd`
 - `auditd_package`
+- `auditd_grub`
 - `auditd_config`
 - `auditd_rules`
 - `auditd_service`

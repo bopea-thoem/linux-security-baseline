@@ -52,6 +52,55 @@
     - login_defs
     - login_defs_file
 
+- name: Configure /etc/bashrc shell umask
+  ansible.builtin.blockinfile:
+    path: "{{ linux_security_baseline_login_defs_bashrc_file.path }}"
+    marker: "{{ linux_security_baseline_login_defs_bashrc_file.marker }}"
+    block: "umask {{ linux_security_baseline_login_defs_bashrc_umask }}"
+    owner: "{{ linux_security_baseline_login_defs_bashrc_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_bashrc_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_bashrc_file.mode }}"
+    create: true
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_manage_shell_umask | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+
+- name: Ensure profile.d directory exists
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_login_defs_profile_directory.path }}"
+    state: directory
+    owner: "{{ linux_security_baseline_login_defs_profile_directory.owner }}"
+    group: "{{ linux_security_baseline_login_defs_profile_directory.group }}"
+    mode: "{{ linux_security_baseline_login_defs_profile_directory.mode }}"
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_manage_shell_umask | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+
+- name: Configure CIS profile umask script
+  ansible.builtin.copy:
+    dest: "{{ linux_security_baseline_login_defs_profile_umask_file.path }}"
+    content: |
+      # Ansible managed: Linux Security Baseline CIS profile umask.
+      umask {{ linux_security_baseline_login_defs_profile_umask }}
+    owner: "{{ linux_security_baseline_login_defs_profile_umask_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_profile_umask_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_profile_umask_file.mode }}"
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_manage_shell_umask | bool
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+
 - name: Gather local passwd database
   ansible.builtin.getent:
     database: passwd

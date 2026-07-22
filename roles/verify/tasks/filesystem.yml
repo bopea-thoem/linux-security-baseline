@@ -11,6 +11,13 @@
         linux_security_baseline_filesystem_disabled_modules
         | default(linux_security_baseline_verify_disabled_kernel_modules)
       }}
+    linux_security_baseline_verify_disabled_install_true_modules_effective: >-
+      {{
+        linux_security_baseline_filesystem_disabled_install_true_modules
+        | default(
+          linux_security_baseline_verify_disabled_install_true_kernel_modules
+        )
+      }}
     linux_security_baseline_verify_modprobe_conf_effective: >-
       {{
         linux_security_baseline_filesystem_modprobe_conf
@@ -118,7 +125,7 @@
     - verify
     - kernel_modules
 
-- name: Test module install overrides
+- name: Test /bin/false module install overrides
   ansible.builtin.command:
     argv:
       - modprobe
@@ -129,6 +136,24 @@
   loop_control:
     label: "{{ item }}"
   register: linux_security_baseline_verify_modprobe_tests
+  changed_when: false
+  failed_when: false
+  tags:
+    - baseline
+    - verify
+    - kernel_modules
+
+- name: Test /bin/true module install overrides
+  ansible.builtin.command:
+    argv:
+      - modprobe
+      - -n
+      - -v
+      - "{{ item }}"
+  loop: "{{ linux_security_baseline_verify_disabled_install_true_modules_effective }}"
+  loop_control:
+    label: "{{ item }}"
+  register: linux_security_baseline_verify_install_true_modprobe_tests
   changed_when: false
   failed_when: false
   tags:
@@ -181,6 +206,57 @@
         ]
       }}
   loop: "{{ linux_security_baseline_verify_modprobe_tests.results | default([]) }}"
+  loop_control:
+    label: "{{ item.item }}"
+  tags:
+    - baseline
+    - verify
+    - kernel_modules
+
+- name: Record disabled install-true module compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'kernel_modules',
+            'control': 'disable kernel module ' ~ item.item,
+            'compliant': (
+              (
+                linux_security_baseline_verify_loaded_modules.stdout
+                | default('')
+                | regex_search('(?m)^' ~ item.item ~ '\s')
+              ) is none
+              and (
+                '/bin/true' in (item.stdout | default(''))
+              )
+              and (
+                'install ' ~ item.item ~ ' /bin/true'
+                in linux_security_baseline_verify_modprobe_conf_content
+              )
+            ),
+            'expected': 'not loaded, install override to /bin/true',
+            'actual': (
+              'loaded='
+              ~ (
+                (
+                  linux_security_baseline_verify_loaded_modules.stdout
+                  | default('')
+                  | regex_search('(?m)^' ~ item.item ~ '\s')
+                ) is not none
+              )
+              ~ '; modprobe='
+              ~ (item.stdout | default(item.stderr | default('missing')) | trim)
+            ),
+            'message': 'Verify disabled kernel module is blocked.'
+          }
+        ]
+      }}
+  loop: >-
+    {{
+      linux_security_baseline_verify_install_true_modprobe_tests.results
+      | default([])
+    }}
   loop_control:
     label: "{{ item.item }}"
   tags:

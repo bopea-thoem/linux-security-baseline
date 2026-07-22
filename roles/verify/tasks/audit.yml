@@ -16,6 +16,21 @@
         linux_security_baseline_auditd_config
         | default(linux_security_baseline_verify_auditd_config)
       }}
+    linux_security_baseline_verify_auditd_sudo_log_file_effective: >-
+      {{
+        linux_security_baseline_auditd_sudo_log_file
+        | default(linux_security_baseline_verify_auditd_sudo_log_file)
+      }}
+    linux_security_baseline_verify_auditd_grub_file_effective: >-
+      {{
+        linux_security_baseline_auditd_grub_file
+        | default(linux_security_baseline_verify_auditd_grub_file)
+      }}
+    linux_security_baseline_verify_auditd_grub_audit_argument_effective: >-
+      {{
+        linux_security_baseline_auditd_grub_audit_argument
+        | default(linux_security_baseline_verify_auditd_grub_audit_argument)
+      }}
   tags:
     - baseline
     - verify
@@ -110,6 +125,177 @@
           }
         ]
       }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Check sudo log file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_verify_auditd_sudo_log_file_effective.path }}"
+  register: linux_security_baseline_verify_auditd_sudo_log_stat
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record sudo log file compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'sudo log file for audit watch',
+            'compliant': (
+              linux_security_baseline_verify_auditd_sudo_log_stat.stat.exists
+              and linux_security_baseline_verify_auditd_sudo_log_stat.stat.pw_name
+              == linux_security_baseline_verify_auditd_sudo_log_file_effective.owner
+              and linux_security_baseline_verify_auditd_sudo_log_stat.stat.gr_name
+              == linux_security_baseline_verify_auditd_sudo_log_file_effective.group
+              and linux_security_baseline_verify_auditd_sudo_log_stat.stat.mode
+              == linux_security_baseline_verify_auditd_sudo_log_file_effective.mode
+            ),
+            'expected': (
+              linux_security_baseline_verify_auditd_sudo_log_file_effective.owner
+              ~ ':'
+              ~ linux_security_baseline_verify_auditd_sudo_log_file_effective.group
+              ~ ' '
+              ~ linux_security_baseline_verify_auditd_sudo_log_file_effective.mode
+            ),
+            'actual': (
+              (
+                linux_security_baseline_verify_auditd_sudo_log_stat.stat.pw_name
+                | default('missing')
+              )
+              ~ ':'
+              ~ (
+                linux_security_baseline_verify_auditd_sudo_log_stat.stat.gr_name
+                | default('missing')
+              )
+              ~ ' '
+              ~ (
+                linux_security_baseline_verify_auditd_sudo_log_stat.stat.mode
+                | default('missing')
+              )
+            ),
+            'message': 'Verify sudo log file exists for audit watch loading.'
+          }
+        ]
+      }}
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Check GRUB default file
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_verify_auditd_grub_file_effective.path }}"
+  register: linux_security_baseline_verify_auditd_grub_stat
+  when: (linux_security_baseline_auditd_manage_grub | default(true)) | bool
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Read GRUB default file
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_auditd_grub_file_effective.path }}"
+  register: linux_security_baseline_verify_auditd_grub_slurp
+  when:
+    - (linux_security_baseline_auditd_manage_grub | default(true)) | bool
+    - linux_security_baseline_verify_auditd_grub_stat.stat.exists
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Set GRUB default file content
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_auditd_grub_content: >-
+      {{
+        (
+          linux_security_baseline_verify_auditd_grub_slurp
+          | default({})
+        ).content
+        | default('')
+        | b64decode
+      }}
+  when: (linux_security_baseline_auditd_manage_grub | default(true)) | bool
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Set GRUB_CMDLINE_LINUX argument list
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_auditd_grub_cmdline: >-
+      {{
+        (
+          linux_security_baseline_verify_auditd_grub_content
+          | regex_search('(?m)^GRUB_CMDLINE_LINUX=.*$')
+          | default('GRUB_CMDLINE_LINUX=""', true)
+        )
+        | regex_replace('^GRUB_CMDLINE_LINUX=', '')
+        | trim
+        | regex_replace('^"(.*)"$', '\\1')
+        | regex_replace("^'(.*)'$", '\\1')
+      }}
+    linux_security_baseline_verify_auditd_grub_cmdline_args: >-
+      {{
+        (
+          linux_security_baseline_verify_auditd_grub_content
+          | regex_search('(?m)^GRUB_CMDLINE_LINUX=.*$')
+          | default('GRUB_CMDLINE_LINUX=""', true)
+        )
+        | regex_replace('^GRUB_CMDLINE_LINUX=', '')
+        | trim
+        | regex_replace('^"(.*)"$', '\\1')
+        | regex_replace("^'(.*)'$", '\\1')
+        | regex_replace('\\s+', ' ')
+        | trim
+        | split(' ')
+      }}
+  when: (linux_security_baseline_auditd_manage_grub | default(true)) | bool
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record GRUB audit kernel argument compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'GRUB_CMDLINE_LINUX audit kernel argument',
+            'compliant': (
+              linux_security_baseline_verify_auditd_grub_stat.stat.exists
+              and linux_security_baseline_verify_auditd_grub_audit_argument_effective
+              in linux_security_baseline_verify_auditd_grub_cmdline_args
+            ),
+            'expected': (
+              'GRUB_CMDLINE_LINUX contains '
+              ~ linux_security_baseline_verify_auditd_grub_audit_argument_effective
+            ),
+            'actual': (
+              linux_security_baseline_verify_auditd_grub_content
+              | regex_search('(?m)^GRUB_CMDLINE_LINUX=.*$')
+              | default('missing', true)
+            ),
+            'message': 'Verify audit is enabled at boot in GRUB defaults.'
+          }
+        ]
+      }}
+  when: (linux_security_baseline_auditd_manage_grub | default(true)) | bool
   tags:
     - baseline
     - verify
@@ -355,6 +541,34 @@
         ]
       }}
   loop: "{{ linux_security_baseline_verify_auditd_required_control_rules }}"
+  loop_control:
+    label: "{{ item }}"
+  tags:
+    - baseline
+    - verify
+    - audit
+    - auditd
+
+- name: Record required audit rule compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'audit',
+            'control': 'audit rule ' ~ item,
+            'compliant': item in linux_security_baseline_verify_audit_rules_content,
+            'expected': item,
+            'actual': (
+              'present'
+              if item in linux_security_baseline_verify_audit_rules_content
+              else 'missing'
+            ),
+            'message': 'Verify required audit rule is present.'
+          }
+        ]
+      }}
+  loop: "{{ linux_security_baseline_verify_auditd_required_rules | default([]) }}"
   loop_control:
     label: "{{ item }}"
   tags:

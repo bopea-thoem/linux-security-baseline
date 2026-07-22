@@ -34,7 +34,7 @@
     - ipv6
     - ipv6_sysctl
 
-- name: Configure IPv6 sysctl settings
+- name: Configure and apply IPv6 sysctl settings
   ansible.posix.sysctl:
     name: "{{ item.name }}"
     value: "{{ item.value }}"

@@ -1,6 +1,7 @@
 ---
 linux_security_baseline_login_defs_enabled: true
 linux_security_baseline_login_defs_manage_file: true
+linux_security_baseline_login_defs_manage_shell_umask: true
 linux_security_baseline_login_defs_update_existing_users: true
 linux_security_baseline_login_defs_verify: true
 linux_security_baseline_login_defs_verify_fail_on_drift: true
@@ -14,8 +15,29 @@ linux_security_baseline_login_defs_file:
 linux_security_baseline_login_defs_settings:
   PASS_MAX_DAYS: "90"
   PASS_MIN_DAYS: "7"
-  PASS_WARN_AGE: "14"
+  PASS_WARN_AGE: "7"
   UMASK: "027"
+
+linux_security_baseline_login_defs_bashrc_file:
+  path: /etc/bashrc
+  owner: root
+  group: root
+  mode: "0644"
+  marker: "# {mark} ANSIBLE MANAGED BLOCK - Linux Security Baseline bashrc umask"
+linux_security_baseline_login_defs_bashrc_umask: "0773"
+
+linux_security_baseline_login_defs_profile_directory:
+  path: /etc/profile.d
+  owner: root
+  group: root
+  mode: "0755"
+
+linux_security_baseline_login_defs_profile_umask_file:
+  path: /etc/profile.d/umask.sh
+  owner: root
+  group: root
+  mode: "0644"
+linux_security_baseline_login_defs_profile_umask: "0775"
 
 linux_security_baseline_login_defs_user_update:
   min_uid: 1000

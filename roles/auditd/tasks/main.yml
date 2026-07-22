@@ -77,6 +77,50 @@
     - auditd
     - auditd_config
 
+- name: Build GRUB_CMDLINE_LINUX audit kernel argument
+  ansible.builtin.import_tasks: grub_cmdline_facts.yml
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_grub | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_grub
+
+- name: Configure GRUB_CMDLINE_LINUX audit kernel argument
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_auditd_grub_file.path }}"
+    regexp: "^GRUB_CMDLINE_LINUX="
+    line: 'GRUB_CMDLINE_LINUX="{{ linux_security_baseline_auditd_grub_cmdline_effective }}"'
+    owner: "{{ linux_security_baseline_auditd_grub_file.owner }}"
+    group: "{{ linux_security_baseline_auditd_grub_file.group }}"
+    mode: "{{ linux_security_baseline_auditd_grub_file.mode }}"
+    create: true
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_grub | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_grub
+
+- name: Ensure sudo log file exists for audit watch
+  ansible.builtin.file:
+    path: "{{ linux_security_baseline_auditd_sudo_log_file.path }}"
+    state: touch
+    owner: "{{ linux_security_baseline_auditd_sudo_log_file.owner }}"
+    group: "{{ linux_security_baseline_auditd_sudo_log_file.group }}"
+    mode: "{{ linux_security_baseline_auditd_sudo_log_file.mode }}"
+    modification_time: preserve
+    access_time: preserve
+  when:
+    - linux_security_baseline_auditd_enabled | bool
+    - linux_security_baseline_auditd_manage_rules | bool
+  tags:
+    - baseline
+    - auditd
+    - auditd_rules
+
 - name: Check audit watch paths
   ansible.builtin.stat:
     path: "{{ item.path }}"
