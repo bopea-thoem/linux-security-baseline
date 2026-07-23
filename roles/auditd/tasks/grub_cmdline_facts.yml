@@ -26,8 +26,10 @@
         )
         | regex_replace('^GRUB_CMDLINE_LINUX=', '')
         | trim
-        | regex_replace('^"(.*)"$', '\\1')
-        | regex_replace("^'(.*)'$", '\\1')
+        | regex_replace('^"', '')
+        | regex_replace('"$', '')
+        | regex_replace("^'", '')
+        | regex_replace("'$", '')
       }}
 
 - name: Set effective GRUB_CMDLINE_LINUX value
@@ -46,8 +48,8 @@
           else (
             linux_security_baseline_auditd_grub_cmdline_current
             | regex_replace(
-              '(^|\\s)(rhgb)(\\s|$)',
-              '\\1' ~ linux_security_baseline_auditd_grub_audit_argument ~ ' \\2\\3'
+              '(^|\\s)rhgb(\\s|$)',
+              ' ' ~ linux_security_baseline_auditd_grub_audit_argument ~ ' rhgb '
             )
             if 'rhgb'
             in (

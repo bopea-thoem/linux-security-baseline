@@ -244,8 +244,10 @@
         )
         | regex_replace('^GRUB_CMDLINE_LINUX=', '')
         | trim
-        | regex_replace('^"(.*)"$', '\\1')
-        | regex_replace("^'(.*)'$", '\\1')
+        | regex_replace('^"', '')
+        | regex_replace('"$', '')
+        | regex_replace("^'", '')
+        | regex_replace("'$", '')
       }}
     linux_security_baseline_verify_auditd_grub_cmdline_args: >-
       {{
@@ -256,8 +258,10 @@
         )
         | regex_replace('^GRUB_CMDLINE_LINUX=', '')
         | trim
-        | regex_replace('^"(.*)"$', '\\1')
-        | regex_replace("^'(.*)'$", '\\1')
+        | regex_replace('^"', '')
+        | regex_replace('"$', '')
+        | regex_replace("^'", '')
+        | regex_replace("'$", '')
         | regex_replace('\\s+', ' ')
         | trim
         | split(' ')
