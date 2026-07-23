@@ -48,8 +48,8 @@
           else (
             linux_security_baseline_auditd_grub_cmdline_current
             | regex_replace(
-              '(^|\\s)rhgb(\\s|$)',
-              ' ' ~ linux_security_baseline_auditd_grub_audit_argument ~ ' rhgb '
+              '(?<!\\S)rhgb(?!\\S)',
+              linux_security_baseline_auditd_grub_audit_argument ~ ' rhgb'
             )
             if 'rhgb'
             in (
