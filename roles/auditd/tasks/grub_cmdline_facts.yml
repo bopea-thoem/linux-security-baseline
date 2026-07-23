@@ -30,23 +30,24 @@
         | regex_replace("^'(.*)'$", '\\1')
       }}
 
-- name: Remove existing audit kernel argument from GRUB_CMDLINE_LINUX
-  ansible.builtin.set_fact:
-    linux_security_baseline_auditd_grub_cmdline_without_audit: >-
-      {{
-        linux_security_baseline_auditd_grub_cmdline_current
-        | regex_replace('(^|\\s+)audit=\\S+', ' ')
-        | regex_replace('\\s+', ' ')
-        | trim
-      }}
-
 - name: Set effective GRUB_CMDLINE_LINUX value
   ansible.builtin.set_fact:
     linux_security_baseline_auditd_grub_cmdline_effective: >-
       {{
         (
-          linux_security_baseline_auditd_grub_cmdline_without_audit
-          ~ ' '
-          ~ linux_security_baseline_auditd_grub_audit_argument
-        ) | trim
+          linux_security_baseline_auditd_grub_cmdline_current
+          if linux_security_baseline_auditd_grub_audit_argument
+          in (
+            linux_security_baseline_auditd_grub_cmdline_current
+            | regex_replace('\\s+', ' ')
+            | trim
+            | split(' ')
+          )
+          else (
+            linux_security_baseline_auditd_grub_cmdline_current
+            ~ ' '
+            ~ linux_security_baseline_auditd_grub_audit_argument
+          )
+        )
+        | trim
       }}
