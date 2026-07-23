@@ -45,8 +45,22 @@
           )
           else (
             linux_security_baseline_auditd_grub_cmdline_current
-            ~ ' '
-            ~ linux_security_baseline_auditd_grub_audit_argument
+            | regex_replace(
+              '(^|\\s)(rhgb)(\\s|$)',
+              '\\1' ~ linux_security_baseline_auditd_grub_audit_argument ~ ' \\2\\3'
+            )
+            if 'rhgb'
+            in (
+              linux_security_baseline_auditd_grub_cmdline_current
+              | regex_replace('\\s+', ' ')
+              | trim
+              | split(' ')
+            )
+            else (
+              linux_security_baseline_auditd_grub_cmdline_current
+              ~ ' '
+              ~ linux_security_baseline_auditd_grub_audit_argument
+            )
           )
         )
         | trim
