@@ -51,7 +51,7 @@ ensure_bashrc_line() {
   fi
 
   if grep -Eq "^[[:space:]]*#?[[:space:]]*${line}$" "$bashrc_file"; then
-    sed -i "s/^[[:space:]]*#*[[:space:]]*${line}$/"$line"/" "$bashrc_file"
+    sed -i "s/^[[:space:]]*#*[[:space:]]*${line}$/$(printf '%s' "$line")/" "$bashrc_file"
   else
     printf '%s\n' "$line" >> "$bashrc_file"
   fi
@@ -81,4 +81,13 @@ ensure_login_defs_param "$login_defs_file" "PASS_WARN_AGE" "7"
 
 chmod 0644 "$pwquality_conf" "$pwhistory_conf" "$faillock_conf" "$login_defs_file"
 
-. "$bashrc_file"
+export BASHRCSOURCED=1
+if [ -f "$bashrc_file" ]; then
+  set +e
+  . "$bashrc_file"
+  status=$?
+  set -e
+  if [ "$status" -ne 0 ]; then
+    exit 0
+  fi
+fi
