@@ -58,7 +58,8 @@ linux_security_baseline_pam_rhel7_auth_files:
   - /etc/pam.d/password-auth-ac
 
 linux_security_baseline_pam_pwquality:
-  minlen: 14
+  minlen: 8
+  minclass: 4
   dcredit: -1
   ucredit: -1
   lcredit: -1
@@ -71,9 +72,9 @@ linux_security_baseline_pam_pwquality:
   enforcing: 1
 
 linux_security_baseline_pam_faillock:
-  deny: 5
-  fail_interval: 900
-  unlock_time: 900
+  deny: 3
+  fail_interval: 300
+  unlock_time: 300
   even_deny_root: false
   root_unlock_time: 60
 

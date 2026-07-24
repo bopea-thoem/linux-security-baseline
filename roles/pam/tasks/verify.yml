@@ -18,13 +18,25 @@
     - pam_verify
     - verify
 
-- name: Verify password complexity policy
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_pam_pwquality_template }}"
-    dest: "{{ linux_security_baseline_pam_files.pwquality.path }}"
+- name: Verify password complexity policy settings
+  ansible.builtin.lineinfile:
+    path: "{{ linux_security_baseline_pam_files.pwquality.path }}"
+    regexp: "^\\s*#?\\s*{{ item.key }}\\s*=.*$"
+    line: "{{ item.key }} = {{ item.value }}"
+    insertafter: EOF
+    create: true
     owner: "{{ linux_security_baseline_pam_files.pwquality.owner }}"
     group: "{{ linux_security_baseline_pam_files.pwquality.group }}"
     mode: "{{ linux_security_baseline_pam_files.pwquality.mode }}"
+  loop:
+    - key: minlen
+      value: "{{ linux_security_baseline_pam_pwquality.minlen }}"
+    - key: minclass
+      value: "{{ linux_security_baseline_pam_pwquality.minclass }}"
+    - key: usercheck
+      value: "{{ linux_security_baseline_pam_pwquality.usercheck }}"
+  loop_control:
+    label: "{{ item.key }}"
   check_mode: true
   register: linux_security_baseline_pam_pwquality_verify_result
   failed_when:

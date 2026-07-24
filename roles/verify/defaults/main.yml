@@ -275,17 +275,9 @@ linux_security_baseline_verify_pam_authselect_profile: custom/linux-security-bas
 linux_security_baseline_verify_pam_authselect_features:
   - with-faillock
 linux_security_baseline_verify_pam_pwquality:
-  minlen: "14"
-  dcredit: "-1"
-  ucredit: "-1"
-  lcredit: "-1"
-  ocredit: "-1"
-  difok: "4"
-  maxrepeat: "3"
-  maxclassrepeat: "4"
-  dictcheck: "1"
+  minlen: "8"
+  minclass: "4"
   usercheck: "1"
-  enforcing: "1"
 linux_security_baseline_verify_pam_faillock:
   deny: "5"
   fail_interval: "900"

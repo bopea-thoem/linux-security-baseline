@@ -3,7 +3,7 @@ linux_security_baseline_ipv6_enabled: true
 linux_security_baseline_ipv6_manage_sysctl: true
 linux_security_baseline_ipv6_verify: true
 linux_security_baseline_ipv6_verify_fail_on_drift: true
-linux_security_baseline_ipv6_disable_ipv6: true
+linux_security_baseline_ipv6_disable_ipv6: false
 linux_security_baseline_ipv6_sysctl_file: /etc/sysctl.conf
 
 linux_security_baseline_ipv6_sysctl_settings:

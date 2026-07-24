@@ -62,13 +62,11 @@
     - pam
     - pam_package
 
-- name: Configure password complexity policy
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_pam_pwquality_template }}"
-    dest: "{{ linux_security_baseline_pam_files.pwquality.path }}"
-    owner: "{{ linux_security_baseline_pam_files.pwquality.owner }}"
-    group: "{{ linux_security_baseline_pam_files.pwquality.group }}"
-    mode: "{{ linux_security_baseline_pam_files.pwquality.mode }}"
+- name: Configure password complexity policy settings
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/enforce_pwquality.sh"
+    args:
+      - "{{ linux_security_baseline_pam_files.pwquality.path }}"
   when:
     - linux_security_baseline_pam_enabled | bool
     - linux_security_baseline_pam_manage_pwquality | bool

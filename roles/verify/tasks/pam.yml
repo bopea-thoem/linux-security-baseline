@@ -41,55 +41,15 @@
           linux_security_baseline_pam_pwquality.minlen
           | default(linux_security_baseline_verify_pam_pwquality.minlen)
         }}
-      dcredit: >-
+      minclass: >-
         {{
-          linux_security_baseline_pam_pwquality.dcredit
-          | default(linux_security_baseline_verify_pam_pwquality.dcredit)
-        }}
-      ucredit: >-
-        {{
-          linux_security_baseline_pam_pwquality.ucredit
-          | default(linux_security_baseline_verify_pam_pwquality.ucredit)
-        }}
-      lcredit: >-
-        {{
-          linux_security_baseline_pam_pwquality.lcredit
-          | default(linux_security_baseline_verify_pam_pwquality.lcredit)
-        }}
-      ocredit: >-
-        {{
-          linux_security_baseline_pam_pwquality.ocredit
-          | default(linux_security_baseline_verify_pam_pwquality.ocredit)
-        }}
-      difok: >-
-        {{
-          linux_security_baseline_pam_pwquality.difok
-          | default(linux_security_baseline_verify_pam_pwquality.difok)
-        }}
-      maxrepeat: >-
-        {{
-          linux_security_baseline_pam_pwquality.maxrepeat
-          | default(linux_security_baseline_verify_pam_pwquality.maxrepeat)
-        }}
-      maxclassrepeat: >-
-        {{
-          linux_security_baseline_pam_pwquality.maxclassrepeat
-          | default(linux_security_baseline_verify_pam_pwquality.maxclassrepeat)
-        }}
-      dictcheck: >-
-        {{
-          linux_security_baseline_pam_pwquality.dictcheck
-          | default(linux_security_baseline_verify_pam_pwquality.dictcheck)
+          linux_security_baseline_pam_pwquality.minclass
+          | default(linux_security_baseline_verify_pam_pwquality.minclass)
         }}
       usercheck: >-
         {{
           linux_security_baseline_pam_pwquality.usercheck
           | default(linux_security_baseline_verify_pam_pwquality.usercheck)
-        }}
-      enforcing: >-
-        {{
-          linux_security_baseline_pam_pwquality.enforcing
-          | default(linux_security_baseline_verify_pam_pwquality.enforcing)
         }}
     linux_security_baseline_verify_pam_faillock_effective:
       deny: >-
