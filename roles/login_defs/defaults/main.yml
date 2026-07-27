@@ -13,8 +13,8 @@ linux_security_baseline_login_defs_file:
   mode: "0644"
 
 linux_security_baseline_login_defs_settings:
-  PASS_MAX_DAYS: "90"
-  PASS_MIN_DAYS: "7"
+  PASS_MAX_DAYS: "60"
+  PASS_MIN_DAYS: "1"
   PASS_WARN_AGE: "7"
   UMASK: "027"
 
