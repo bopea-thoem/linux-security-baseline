@@ -5,7 +5,7 @@ pwquality_conf="${1:-/etc/security/pwquality.conf}"
 pwhistory_conf="/etc/security/pwhistory.conf"
 faillock_conf="/etc/security/faillock.conf"
 bashrc_file="${HOME}/.bashrc"
-login_defs_file="/etc/login.defs"
+login_defs_file="${LOGIN_DEFS_FILE:-/etc/login.defs}"
 
 touch "$pwquality_conf"
 touch "$pwhistory_conf"
@@ -35,12 +35,48 @@ ensure_login_defs_param() {
   local file="$1"
   local key="$2"
   local value="$3"
+  local tmp_file
 
-  if grep -Eq "^[[:space:]]*#?[[:space:]]*${key}([[:space:]]|$)" "$file"; then
-    sed -i "s/^[[:space:]]*#*[[:space:]]*${key}[[:space:]].*/${key} ${value}/" "$file"
-  else
-    printf '%s %s\n' "$key" "$value" >> "$file"
-  fi
+  tmp_file="$(mktemp)"
+
+  awk -v key="$key" -v value="$value" '
+    {
+      if ($0 ~ "^[[:space:]]*" key "([[:space:]]|$)") {
+        if (!seen) {
+          print key " " value
+          seen = 1
+        }
+        next
+      }
+      print $0
+    }
+    END {
+      if (!seen) {
+        print key " " value
+      }
+    }
+  ' "$file" > "$tmp_file"
+
+  mv "$tmp_file" "$file"
+}
+
+remove_login_defs_param() {
+  local file="$1"
+  local key="$2"
+  local tmp_file
+
+  tmp_file="$(mktemp)"
+
+  awk -v key="$key" '
+    {
+      if ($0 ~ "^[[:space:]]*" key "([[:space:]]|$)") {
+        next
+      }
+      print $0
+    }
+  ' "$file" > "$tmp_file"
+
+  mv "$tmp_file" "$file"
 }
 
 ensure_bashrc_line() {
@@ -75,8 +111,9 @@ ensure_param "$faillock_conf" "fail_interval" "300"
 ensure_bashrc_line "export TMOUT=600"
 ensure_bashrc_line "readonly TMOUT"
 
-ensure_login_defs_param "$login_defs_file" "PASS_MIN_DAYS" "1"
+remove_login_defs_param "$login_defs_file" "PASS_MAN_DAYS"
 ensure_login_defs_param "$login_defs_file" "PASS_MAX_DAYS" "60"
+ensure_login_defs_param "$login_defs_file" "PASS_MIN_DAYS" "1"
 ensure_login_defs_param "$login_defs_file" "PASS_WARN_AGE" "7"
 
 chmod 0644 "$pwquality_conf" "$pwhistory_conf" "$faillock_conf" "$login_defs_file"
