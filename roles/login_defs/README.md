@@ -14,6 +14,8 @@ Enterprise `login.defs` role for the Linux Security Baseline.
 - Configure `/etc/login.defs` ownership and permissions.
 - Configure shell UMASK policy in `/etc/bashrc`.
 - Create `/etc/profile.d/umask.sh` for CIS shell profile UMASK policy.
+- Create `/etc/profile.d/00-linux-security-baseline-tmout.sh` with
+  `TMOUT=600` for RHEL 9 and RHEL 10.
 - Configure:
   - `PASS_MAX_DAYS`
   - `PASS_MIN_DAYS`
@@ -45,6 +47,7 @@ PASS_WARN_AGE: "7"
 UMASK: "027"
 linux_security_baseline_login_defs_bashrc_umask: "0773"
 linux_security_baseline_login_defs_profile_umask: "0775"
+linux_security_baseline_login_defs_tmout: "600"
 ```
 
 ## Tags
@@ -53,6 +56,7 @@ linux_security_baseline_login_defs_profile_umask: "0775"
 - `login_defs`
 - `login_defs_file`
 - `login_defs_shell`
+- `login_defs_tmout`
 - `login_defs_users`
 - `login_defs_verify`
 - `verify`

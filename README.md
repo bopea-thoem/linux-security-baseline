@@ -22,7 +22,7 @@ versions.
 - `cron`: cron and at file permissions and access control
 - `ssh`: OpenSSH hardening with version-aware deprecated directive handling
 - `pam`: RHEL 7 authconfig and RHEL 8+ authselect password policy controls
-- `login_defs`: password aging, umask, and existing user aging updates
+- `login_defs`: password aging, umask, RHEL 9/10 idle timeout, and existing user aging updates
 - `verify`: compliance evidence collection, JSON/Markdown reports, fail on drift
 
 The current kernel module controls are implemented by the `filesystem` role.

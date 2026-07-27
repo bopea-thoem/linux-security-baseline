@@ -48,8 +48,10 @@ Role execution is controlled under `linux_security_baseline_roles` in
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `linux_security_baseline_login_defs_manage_shell_umask` | `true` | Manages shell UMASK policy in `/etc/bashrc` and `/etc/profile.d/umask.sh`. |
+| `linux_security_baseline_login_defs_manage_shell_tmout` | `true` | Manages shell idle timeout policy for RHEL 9 and RHEL 10. |
 | `linux_security_baseline_login_defs_bashrc_umask` | `0773` | UMASK applied from `/etc/bashrc`. |
 | `linux_security_baseline_login_defs_profile_umask` | `0775` | UMASK applied from `/etc/profile.d/umask.sh`. |
+| `linux_security_baseline_login_defs_tmout` | `600` | Shell idle timeout exported through `/etc/profile.d/00-linux-security-baseline-tmout.sh`. |
 
 ## Domain Defaults
 

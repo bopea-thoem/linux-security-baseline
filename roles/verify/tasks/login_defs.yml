@@ -36,6 +36,21 @@
         linux_security_baseline_login_defs_profile_umask
         | default(linux_security_baseline_verify_login_defs_profile_umask)
       }}
+    linux_security_baseline_verify_login_defs_tmout_supported_major_versions_effective: >-
+      {{
+        linux_security_baseline_login_defs_tmout_supported_major_versions
+        | default(linux_security_baseline_verify_login_defs_tmout_supported_major_versions)
+      }}
+    linux_security_baseline_verify_login_defs_profile_tmout_file_effective: >-
+      {{
+        linux_security_baseline_login_defs_profile_tmout_file
+        | default(linux_security_baseline_verify_login_defs_profile_tmout_file)
+      }}
+    linux_security_baseline_verify_login_defs_tmout_effective: >-
+      {{
+        linux_security_baseline_login_defs_tmout
+        | default(linux_security_baseline_verify_login_defs_tmout)
+      }}
   tags:
     - baseline
     - verify
@@ -140,6 +155,53 @@
         | b64decode
       }}
   when: (linux_security_baseline_login_defs_manage_shell_umask | default(true)) | bool
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Check shell idle timeout script
+  ansible.builtin.stat:
+    path: "{{ linux_security_baseline_verify_login_defs_profile_tmout_file_effective.path }}"
+  register: linux_security_baseline_verify_login_defs_profile_tmout_stat
+  when:
+    - (linux_security_baseline_login_defs_manage_shell_tmout | default(true)) | bool
+    - >-
+      ansible_facts.distribution_major_version | int
+      in linux_security_baseline_verify_login_defs_tmout_supported_major_versions_effective
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Read shell idle timeout script
+  ansible.builtin.slurp:
+    src: "{{ linux_security_baseline_verify_login_defs_profile_tmout_file_effective.path }}"
+  register: linux_security_baseline_verify_login_defs_profile_tmout_slurp
+  when:
+    - (linux_security_baseline_login_defs_manage_shell_tmout | default(true)) | bool
+    - >-
+      ansible_facts.distribution_major_version | int
+      in linux_security_baseline_verify_login_defs_tmout_supported_major_versions_effective
+    - linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.exists
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Set shell idle timeout script content
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_login_defs_profile_tmout_content: >-
+      {{
+        linux_security_baseline_verify_login_defs_profile_tmout_slurp.content
+        | default('')
+        | b64decode
+      }}
+  when:
+    - (linux_security_baseline_login_defs_manage_shell_tmout | default(true)) | bool
+    - >-
+      ansible_facts.distribution_major_version | int
+      in linux_security_baseline_verify_login_defs_tmout_supported_major_versions_effective
   tags:
     - baseline
     - verify
@@ -349,6 +411,84 @@
         ]
       }}
   when: (linux_security_baseline_login_defs_manage_shell_umask | default(true)) | bool
+  tags:
+    - baseline
+    - verify
+    - login_defs
+
+- name: Record shell idle timeout script compliance
+  ansible.builtin.set_fact:
+    linux_security_baseline_verify_results: >-
+      {{
+        linux_security_baseline_verify_results + [
+          {
+            'domain': 'login_defs',
+            'control': 'shell idle timeout script',
+            'compliant': (
+              linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.exists
+              and linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.pw_name
+              == linux_security_baseline_verify_login_defs_profile_tmout_file_effective.owner
+              and linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.gr_name
+              == linux_security_baseline_verify_login_defs_profile_tmout_file_effective.group
+              and linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.mode
+              == linux_security_baseline_verify_login_defs_profile_tmout_file_effective.mode
+              and (
+                linux_security_baseline_verify_login_defs_profile_tmout_content
+                | regex_search(
+                  '(?m)^\\s*TMOUT='
+                  ~ linux_security_baseline_verify_login_defs_tmout_effective
+                  ~ '\\s*$'
+                )
+              ) is not none
+              and (
+                linux_security_baseline_verify_login_defs_profile_tmout_content
+                | regex_search('(?m)^\\s*readonly\\s+TMOUT\\s*$')
+              ) is not none
+              and (
+                linux_security_baseline_verify_login_defs_profile_tmout_content
+                | regex_search('(?m)^\\s*export\\s+TMOUT\\s*$')
+              ) is not none
+            ),
+            'expected': (
+              linux_security_baseline_verify_login_defs_profile_tmout_file_effective.owner
+              ~ ':'
+              ~ linux_security_baseline_verify_login_defs_profile_tmout_file_effective.group
+              ~ ' '
+              ~ linux_security_baseline_verify_login_defs_profile_tmout_file_effective.mode
+              ~ ', TMOUT='
+              ~ linux_security_baseline_verify_login_defs_tmout_effective
+            ),
+            'actual': (
+              (
+                linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.pw_name
+                | default('missing')
+              )
+              ~ ':'
+              ~ (
+                linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.gr_name
+                | default('missing')
+              )
+              ~ ' '
+              ~ (
+                linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.mode
+                | default('missing')
+              )
+              ~ ', '
+              ~ (
+                linux_security_baseline_verify_login_defs_profile_tmout_content
+                | regex_search('(?m)^\\s*TMOUT=.*$')
+                | default('TMOUT missing', true)
+              )
+            ),
+            'message': 'Verify RHEL 9 and RHEL 10 shell idle timeout baseline.'
+          }
+        ]
+      }}
+  when:
+    - (linux_security_baseline_login_defs_manage_shell_tmout | default(true)) | bool
+    - >-
+      ansible_facts.distribution_major_version | int
+      in linux_security_baseline_verify_login_defs_tmout_supported_major_versions_effective
   tags:
     - baseline
     - verify

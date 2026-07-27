@@ -86,7 +86,13 @@
     - linux_security_baseline_login_defs_profile_directory_verify_result.changed | default(false)
   when:
     - linux_security_baseline_login_defs_verify | bool
-    - linux_security_baseline_login_defs_manage_shell_umask | bool
+    - >-
+      linux_security_baseline_login_defs_manage_shell_umask | bool
+      or (
+        linux_security_baseline_login_defs_manage_shell_tmout | bool
+        and ansible_facts.distribution_major_version | int
+        in linux_security_baseline_login_defs_tmout_supported_major_versions
+      )
   tags:
     - baseline
     - login_defs
@@ -119,6 +125,40 @@
     - baseline
     - login_defs
     - login_defs_shell
+    - login_defs_verify
+    - verify
+
+- name: Verify shell idle timeout script
+  ansible.builtin.copy:
+    dest: "{{ linux_security_baseline_login_defs_profile_tmout_file.path }}"
+    content: |
+      # Ansible managed: Linux Security Baseline shell idle timeout.
+      TMOUT={{ linux_security_baseline_login_defs_tmout }}
+      readonly TMOUT
+      export TMOUT
+    owner: "{{ linux_security_baseline_login_defs_profile_tmout_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_profile_tmout_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_profile_tmout_file.mode }}"
+  check_mode: true
+  register: linux_security_baseline_login_defs_profile_tmout_verify_result
+  failed_when:
+    - linux_security_baseline_login_defs_verify_fail_on_drift | bool
+    - linux_security_baseline_login_defs_profile_tmout_verify_result.changed | default(false)
+  when:
+    - linux_security_baseline_login_defs_verify | bool
+    - linux_security_baseline_login_defs_manage_shell_tmout | bool
+    - >-
+      ansible_facts.distribution_major_version | int
+      in linux_security_baseline_login_defs_tmout_supported_major_versions
+    - >-
+      not
+      linux_security_baseline_login_defs_profile_directory_verify_result.changed
+      | default(false)
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+    - login_defs_tmout
     - login_defs_verify
     - verify
 

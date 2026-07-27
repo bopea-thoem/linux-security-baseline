@@ -2,6 +2,7 @@
 linux_security_baseline_login_defs_enabled: true
 linux_security_baseline_login_defs_manage_file: true
 linux_security_baseline_login_defs_manage_shell_umask: true
+linux_security_baseline_login_defs_manage_shell_tmout: true
 linux_security_baseline_login_defs_update_existing_users: true
 linux_security_baseline_login_defs_verify: true
 linux_security_baseline_login_defs_verify_fail_on_drift: true
@@ -38,6 +39,16 @@ linux_security_baseline_login_defs_profile_umask_file:
   group: root
   mode: "0644"
 linux_security_baseline_login_defs_profile_umask: "0775"
+
+linux_security_baseline_login_defs_tmout_supported_major_versions:
+  - 9
+  - 10
+linux_security_baseline_login_defs_profile_tmout_file:
+  path: /etc/profile.d/00-linux-security-baseline-tmout.sh
+  owner: root
+  group: root
+  mode: "0644"
+linux_security_baseline_login_defs_tmout: "600"
 
 linux_security_baseline_login_defs_user_update:
   min_uid: 1000

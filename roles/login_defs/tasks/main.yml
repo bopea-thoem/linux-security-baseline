@@ -78,7 +78,13 @@
     mode: "{{ linux_security_baseline_login_defs_profile_directory.mode }}"
   when:
     - linux_security_baseline_login_defs_enabled | bool
-    - linux_security_baseline_login_defs_manage_shell_umask | bool
+    - >-
+      linux_security_baseline_login_defs_manage_shell_umask | bool
+      or (
+        linux_security_baseline_login_defs_manage_shell_tmout | bool
+        and ansible_facts.distribution_major_version | int
+        in linux_security_baseline_login_defs_tmout_supported_major_versions
+      )
   tags:
     - baseline
     - login_defs
@@ -100,6 +106,29 @@
     - baseline
     - login_defs
     - login_defs_shell
+
+- name: Configure shell idle timeout script
+  ansible.builtin.copy:
+    dest: "{{ linux_security_baseline_login_defs_profile_tmout_file.path }}"
+    content: |
+      # Ansible managed: Linux Security Baseline shell idle timeout.
+      TMOUT={{ linux_security_baseline_login_defs_tmout }}
+      readonly TMOUT
+      export TMOUT
+    owner: "{{ linux_security_baseline_login_defs_profile_tmout_file.owner }}"
+    group: "{{ linux_security_baseline_login_defs_profile_tmout_file.group }}"
+    mode: "{{ linux_security_baseline_login_defs_profile_tmout_file.mode }}"
+  when:
+    - linux_security_baseline_login_defs_enabled | bool
+    - linux_security_baseline_login_defs_manage_shell_tmout | bool
+    - >-
+      ansible_facts.distribution_major_version | int
+      in linux_security_baseline_login_defs_tmout_supported_major_versions
+  tags:
+    - baseline
+    - login_defs
+    - login_defs_shell
+    - login_defs_tmout
 
 - name: Gather local passwd database
   ansible.builtin.getent:

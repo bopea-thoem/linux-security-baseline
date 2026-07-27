@@ -65,8 +65,8 @@ pwquality, faillock, password history, password complexity, and lockout policy.
 ## login_defs
 
 Configures password aging and umask settings in `/etc/login.defs`, shell UMASK
-policy in `/etc/bashrc` and `/etc/profile.d/umask.sh`, and safely updates
-existing local interactive users.
+policy in `/etc/bashrc` and `/etc/profile.d/umask.sh`, RHEL 9/10 shell idle
+timeout with `TMOUT=600`, and safely updates existing local interactive users.
 
 ## verify
 
