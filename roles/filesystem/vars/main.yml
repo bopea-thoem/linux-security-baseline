@@ -9,4 +9,12 @@ linux_security_baseline_filesystem_supported_major_versions:
 linux_security_baseline_filesystem_dev_shm_opts: >-
   {{ linux_security_baseline_filesystem_dev_shm.opts | join(',') }}
 
-linux_security_baseline_filesystem_modprobe_template: disabled-filesystems.conf.j2
+linux_security_baseline_filesystem_modprobe_content: |
+  # Ansible managed: Linux Security Baseline filesystem module controls.
+  {% for module_name in linux_security_baseline_filesystem_disabled_modules %}
+  install {{ module_name }} /bin/false
+  blacklist {{ module_name }}
+  {% endfor %}
+  {% for module_name in linux_security_baseline_filesystem_disabled_install_true_modules %}
+  install {{ module_name }} /bin/true
+  {% endfor %}

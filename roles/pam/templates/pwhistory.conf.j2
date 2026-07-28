@@ -1,6 +1,0 @@
-# Ansible managed: Linux Security Baseline password history policy.
-
-remember = {{ linux_security_baseline_pam_pwhistory.remember }}
-{% if linux_security_baseline_pam_pwhistory.enforce_for_root | bool %}
-enforce_for_root
-{% endif %}

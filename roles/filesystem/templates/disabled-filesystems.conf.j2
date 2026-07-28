@@ -1,8 +1,0 @@
-# Ansible managed: Linux Security Baseline filesystem module controls.
-{% for module_name in linux_security_baseline_filesystem_disabled_modules %}
-install {{ module_name }} /bin/false
-blacklist {{ module_name }}
-{% endfor %}
-{% for module_name in linux_security_baseline_filesystem_disabled_install_true_modules %}
-install {{ module_name }} /bin/true
-{% endfor %}

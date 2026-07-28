@@ -6,5 +6,24 @@ linux_security_baseline_ssh_supported_major_versions:
   - 9
   - 10
 
-linux_security_baseline_ssh_config_template: sshd-baseline.conf.j2
-linux_security_baseline_ssh_banner_template: issue.net.j2
+linux_security_baseline_ssh_config_content: |
+  # Ansible managed: Linux Security Baseline SSH configuration.
+
+  {% if linux_security_baseline_ssh_protocol_directive_effective | bool %}
+  Protocol {{ linux_security_baseline_ssh_settings.protocol }}
+  {% endif %}
+  LogLevel {{ linux_security_baseline_ssh_settings.log_level }}
+  X11Forwarding {{ linux_security_baseline_ssh_settings.x11_forwarding }}
+  MaxAuthTries {{ linux_security_baseline_ssh_settings.max_auth_tries }}
+  IgnoreRhosts {{ linux_security_baseline_ssh_settings.ignore_rhosts }}
+  HostbasedAuthentication {{ linux_security_baseline_ssh_settings.hostbased_authentication }}
+  PermitRootLogin {{ linux_security_baseline_ssh_settings.permit_root_login }}
+  PermitEmptyPasswords {{ linux_security_baseline_ssh_settings.permit_empty_passwords }}
+  PermitUserEnvironment {{ linux_security_baseline_ssh_settings.permit_user_environment }}
+  Ciphers {{ linux_security_baseline_ssh_approved_ciphers | join(',') }}
+  ClientAliveInterval {{ linux_security_baseline_ssh_settings.client_alive_interval }}
+  ClientAliveCountMax {{ linux_security_baseline_ssh_settings.client_alive_count_max }}
+  Banner {{ linux_security_baseline_ssh_settings.banner }}
+
+linux_security_baseline_ssh_banner_content: |
+  {{ linux_security_baseline_ssh_banner.text | trim }}

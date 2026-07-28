@@ -117,12 +117,12 @@
     - aide_database
 
 - name: Configure daily AIDE integrity check
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_aide_cron_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_aide_cron.path }}"
     owner: "{{ linux_security_baseline_aide_cron.owner }}"
     group: "{{ linux_security_baseline_aide_cron.group }}"
     mode: "{{ linux_security_baseline_aide_cron.mode }}"
+    content: "{{ linux_security_baseline_aide_cron_content }}"
   notify: Restart crond
   when:
     - linux_security_baseline_aide_enabled | bool

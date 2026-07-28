@@ -6,9 +6,39 @@ linux_security_baseline_pam_supported_major_versions:
   - 9
   - 10
 
-linux_security_baseline_pam_pwquality_template: pwquality.conf.j2
-linux_security_baseline_pam_faillock_template: faillock.conf.j2
-linux_security_baseline_pam_pwhistory_template: pwhistory.conf.j2
+linux_security_baseline_pam_pwquality_content: |
+  # Ansible managed: Linux Security Baseline password complexity policy.
+
+  minlen = {{ linux_security_baseline_pam_pwquality.minlen }}
+  dcredit = {{ linux_security_baseline_pam_pwquality.dcredit }}
+  ucredit = {{ linux_security_baseline_pam_pwquality.ucredit }}
+  lcredit = {{ linux_security_baseline_pam_pwquality.lcredit }}
+  ocredit = {{ linux_security_baseline_pam_pwquality.ocredit }}
+  difok = {{ linux_security_baseline_pam_pwquality.difok }}
+  maxrepeat = {{ linux_security_baseline_pam_pwquality.maxrepeat }}
+  maxclassrepeat = {{ linux_security_baseline_pam_pwquality.maxclassrepeat }}
+  dictcheck = {{ linux_security_baseline_pam_pwquality.dictcheck }}
+  usercheck = {{ linux_security_baseline_pam_pwquality.usercheck }}
+  enforcing = {{ linux_security_baseline_pam_pwquality.enforcing }}
+
+linux_security_baseline_pam_faillock_content: |
+  # Ansible managed: Linux Security Baseline account lockout policy.
+
+  deny = {{ linux_security_baseline_pam_faillock.deny }}
+  fail_interval = {{ linux_security_baseline_pam_faillock.fail_interval }}
+  unlock_time = {{ linux_security_baseline_pam_faillock.unlock_time }}
+  {% if linux_security_baseline_pam_faillock.even_deny_root | bool %}
+  even_deny_root
+  root_unlock_time = {{ linux_security_baseline_pam_faillock.root_unlock_time }}
+  {% endif %}
+
+linux_security_baseline_pam_pwhistory_content: |
+  # Ansible managed: Linux Security Baseline password history policy.
+
+  remember = {{ linux_security_baseline_pam_pwhistory.remember }}
+  {% if linux_security_baseline_pam_pwhistory.enforce_for_root | bool %}
+  enforce_for_root
+  {% endif %}
 
 linux_security_baseline_pam_authselect_custom_profile: >-
   custom/{{ linux_security_baseline_pam_authselect.custom_profile_name }}

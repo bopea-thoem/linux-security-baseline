@@ -43,12 +43,12 @@
     - verify
 
 - name: Verify auditd configuration
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_auditd_config_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_auditd_config.path }}"
     owner: "{{ linux_security_baseline_auditd_config.owner }}"
     group: "{{ linux_security_baseline_auditd_config.group }}"
     mode: "{{ linux_security_baseline_auditd_config.mode }}"
+    content: "{{ linux_security_baseline_auditd_config_content }}"
   check_mode: true
   register: linux_security_baseline_auditd_config_verify_result
   failed_when:
@@ -211,12 +211,12 @@
     - verify
 
 - name: Verify audit base rules with augenrules backend
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_auditd_base_rules_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_auditd_rules_files.base.path }}"
     owner: "{{ linux_security_baseline_auditd_rules_files.base.owner }}"
     group: "{{ linux_security_baseline_auditd_rules_files.base.group }}"
     mode: "{{ linux_security_baseline_auditd_rules_files.base.mode }}"
+    content: "{{ linux_security_baseline_auditd_base_rules_content }}"
   check_mode: true
   register: linux_security_baseline_auditd_base_rules_verify_result
   failed_when:
@@ -234,12 +234,12 @@
     - verify
 
 - name: Verify audit main rules with augenrules backend
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_auditd_main_rules_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_auditd_rules_files.main.path }}"
     owner: "{{ linux_security_baseline_auditd_rules_files.main.owner }}"
     group: "{{ linux_security_baseline_auditd_rules_files.main.group }}"
     mode: "{{ linux_security_baseline_auditd_rules_files.main.mode }}"
+    content: "{{ linux_security_baseline_auditd_main_rules_content }}"
   check_mode: true
   register: linux_security_baseline_auditd_main_rules_verify_result
   failed_when:
@@ -257,12 +257,12 @@
     - verify
 
 - name: Verify audit finalize rules with augenrules backend
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_auditd_finalize_rules_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_auditd_rules_files.finalize.path }}"
     owner: "{{ linux_security_baseline_auditd_rules_files.finalize.owner }}"
     group: "{{ linux_security_baseline_auditd_rules_files.finalize.group }}"
     mode: "{{ linux_security_baseline_auditd_rules_files.finalize.mode }}"
+    content: "{{ linux_security_baseline_auditd_finalize_rules_content }}"
   check_mode: true
   register: linux_security_baseline_auditd_finalize_rules_verify_result
   failed_when:
@@ -309,7 +309,7 @@
     group: "{{ linux_security_baseline_auditd_legacy_rules_file.group }}"
     mode: "{{ linux_security_baseline_auditd_legacy_rules_file.mode }}"
     marker: "{{ linux_security_baseline_auditd_legacy_rules_file.marker }}"
-    block: "{{ lookup('ansible.builtin.template', linux_security_baseline_auditd_legacy_rules_template) }}"
+    block: "{{ linux_security_baseline_auditd_legacy_rules_content }}"
   check_mode: true
   register: linux_security_baseline_auditd_legacy_rules_verify_result
   failed_when:

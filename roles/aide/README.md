@@ -37,7 +37,6 @@ The role uses these safeguards:
 - `ansible.builtin.stat`
 - `ansible.builtin.command`
 - `ansible.builtin.copy`
-- `ansible.builtin.template`
 - `ansible.builtin.import_tasks`
 - `ansible.builtin.systemd` in handlers
 
@@ -89,5 +88,5 @@ Verification tasks run after remediation by default:
 
 - Package state is checked in Ansible check mode.
 - The active AIDE database must exist.
-- The cron template is checked in Ansible check mode.
+- The cron file content is checked in Ansible check mode.
 - The full `aide --check` integrity scan is available but disabled by default.

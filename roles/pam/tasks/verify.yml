@@ -53,12 +53,12 @@
     - verify
 
 - name: Verify faillock policy
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_pam_faillock_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_pam_files.faillock.path }}"
     owner: "{{ linux_security_baseline_pam_files.faillock.owner }}"
     group: "{{ linux_security_baseline_pam_files.faillock.group }}"
     mode: "{{ linux_security_baseline_pam_files.faillock.mode }}"
+    content: "{{ linux_security_baseline_pam_faillock_content }}"
   check_mode: true
   register: linux_security_baseline_pam_faillock_verify_result
   failed_when:
@@ -75,12 +75,12 @@
     - verify
 
 - name: Verify password history policy
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_pam_pwhistory_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_pam_files.pwhistory.path }}"
     owner: "{{ linux_security_baseline_pam_files.pwhistory.owner }}"
     group: "{{ linux_security_baseline_pam_files.pwhistory.group }}"
     mode: "{{ linux_security_baseline_pam_files.pwhistory.mode }}"
+    content: "{{ linux_security_baseline_pam_pwhistory_content }}"
   check_mode: true
   register: linux_security_baseline_pam_pwhistory_verify_result
   failed_when:

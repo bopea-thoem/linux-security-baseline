@@ -76,12 +76,12 @@
     - pam_pwquality
 
 - name: Configure faillock policy
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_pam_faillock_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_pam_files.faillock.path }}"
     owner: "{{ linux_security_baseline_pam_files.faillock.owner }}"
     group: "{{ linux_security_baseline_pam_files.faillock.group }}"
     mode: "{{ linux_security_baseline_pam_files.faillock.mode }}"
+    content: "{{ linux_security_baseline_pam_faillock_content }}"
   when:
     - linux_security_baseline_pam_enabled | bool
     - linux_security_baseline_pam_manage_faillock | bool
@@ -91,12 +91,12 @@
     - pam_faillock
 
 - name: Configure password history policy
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_pam_pwhistory_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_pam_files.pwhistory.path }}"
     owner: "{{ linux_security_baseline_pam_files.pwhistory.owner }}"
     group: "{{ linux_security_baseline_pam_files.pwhistory.group }}"
     mode: "{{ linux_security_baseline_pam_files.pwhistory.mode }}"
+    content: "{{ linux_security_baseline_pam_pwhistory_content }}"
   when:
     - linux_security_baseline_pam_enabled | bool
     - linux_security_baseline_pam_manage_pwhistory | bool

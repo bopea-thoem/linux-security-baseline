@@ -41,12 +41,12 @@
     - verify
 
 - name: Verify SSH login banner
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_ssh_banner_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_ssh_paths.banner }}"
     owner: "{{ linux_security_baseline_ssh_banner.owner }}"
     group: "{{ linux_security_baseline_ssh_banner.group }}"
     mode: "{{ linux_security_baseline_ssh_banner.mode }}"
+    content: "{{ linux_security_baseline_ssh_banner_content }}"
   check_mode: true
   register: linux_security_baseline_ssh_banner_verify_result
   failed_when:
@@ -63,12 +63,12 @@
     - verify
 
 - name: Verify SSH security baseline drop-in
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_ssh_config_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_ssh_paths.baseline_config }}"
     owner: "{{ linux_security_baseline_ssh_baseline_config.owner }}"
     group: "{{ linux_security_baseline_ssh_baseline_config.group }}"
     mode: "{{ linux_security_baseline_ssh_baseline_config.mode }}"
+    content: "{{ linux_security_baseline_ssh_config_content }}"
     validate: "{{ linux_security_baseline_ssh_paths.sshd_binary }} -t -f %s"
   check_mode: true
   register: linux_security_baseline_ssh_config_verify_result

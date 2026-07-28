@@ -36,12 +36,12 @@
     - verify
 
 - name: Verify daily AIDE integrity check configuration
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_aide_cron_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_aide_cron.path }}"
     owner: "{{ linux_security_baseline_aide_cron.owner }}"
     group: "{{ linux_security_baseline_aide_cron.group }}"
     mode: "{{ linux_security_baseline_aide_cron.mode }}"
+    content: "{{ linux_security_baseline_aide_cron_content }}"
   check_mode: true
   register: linux_security_baseline_aide_cron_verify_result
   failed_when:

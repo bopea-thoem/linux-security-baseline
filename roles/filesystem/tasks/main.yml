@@ -18,12 +18,12 @@
     - filesystem_dev_shm
 
 - name: Configure disabled kernel module policy
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_filesystem_modprobe_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_filesystem_modprobe_conf.path }}"
     owner: "{{ linux_security_baseline_filesystem_modprobe_conf.owner }}"
     group: "{{ linux_security_baseline_filesystem_modprobe_conf.group }}"
     mode: "{{ linux_security_baseline_filesystem_modprobe_conf.mode }}"
+    content: "{{ linux_security_baseline_filesystem_modprobe_content }}"
   when:
     - linux_security_baseline_filesystem_enabled | bool
     - linux_security_baseline_filesystem_disable_modules | bool
@@ -83,12 +83,12 @@
     - verify
 
 - name: Verify disabled kernel module policy configuration
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_filesystem_modprobe_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_filesystem_modprobe_conf.path }}"
     owner: "{{ linux_security_baseline_filesystem_modprobe_conf.owner }}"
     group: "{{ linux_security_baseline_filesystem_modprobe_conf.group }}"
     mode: "{{ linux_security_baseline_filesystem_modprobe_conf.mode }}"
+    content: "{{ linux_security_baseline_filesystem_modprobe_content }}"
   check_mode: true
   register: linux_security_baseline_filesystem_modprobe_conf_verify_result
   failed_when:

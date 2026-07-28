@@ -122,12 +122,12 @@
     - ssh_config
 
 - name: Configure SSH login banner
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_ssh_banner_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_ssh_paths.banner }}"
     owner: "{{ linux_security_baseline_ssh_banner.owner }}"
     group: "{{ linux_security_baseline_ssh_banner.group }}"
     mode: "{{ linux_security_baseline_ssh_banner.mode }}"
+    content: "{{ linux_security_baseline_ssh_banner_content }}"
   when:
     - linux_security_baseline_ssh_enabled | bool
     - linux_security_baseline_ssh_manage_banner | bool
@@ -137,12 +137,12 @@
     - ssh_banner
 
 - name: Configure SSH security baseline drop-in
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_ssh_config_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_ssh_paths.baseline_config }}"
     owner: "{{ linux_security_baseline_ssh_baseline_config.owner }}"
     group: "{{ linux_security_baseline_ssh_baseline_config.group }}"
     mode: "{{ linux_security_baseline_ssh_baseline_config.mode }}"
+    content: "{{ linux_security_baseline_ssh_config_content }}"
     validate: "{{ linux_security_baseline_ssh_paths.sshd_binary }} -t -f %s"
   notify: Apply sshd configuration
   when:

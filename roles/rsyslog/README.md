@@ -12,7 +12,7 @@ Enterprise rsyslog role for the Linux Security Baseline.
 ## Implemented Controls
 
 - Install `rsyslog`.
-- Manage `/etc/rsyslog.conf` from a template.
+- Manage `/etc/rsyslog.conf` from YAML-defined content.
 - Ensure `/etc/rsyslog.d` exists for drop-in configuration.
 - Enable the `rsyslog` service.
 - Start the `rsyslog` service.

@@ -45,12 +45,12 @@
     - rsyslog_config
 
 - name: Configure rsyslog main configuration
-  ansible.builtin.template:
-    src: "{{ linux_security_baseline_rsyslog_main_config_template }}"
+  ansible.builtin.copy:
     dest: "{{ linux_security_baseline_rsyslog_main_config.path }}"
     owner: "{{ linux_security_baseline_rsyslog_main_config.owner }}"
     group: "{{ linux_security_baseline_rsyslog_main_config.group }}"
     mode: "{{ linux_security_baseline_rsyslog_main_config.mode }}"
+    content: "{{ linux_security_baseline_rsyslog_main_config_content }}"
   notify: Restart rsyslog
   when:
     - linux_security_baseline_rsyslog_enabled | bool

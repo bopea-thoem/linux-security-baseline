@@ -41,7 +41,7 @@ Protocol modules with `/bin/true` install overrides:
 Only the following Ansible modules are used by this role:
 
 - `ansible.posix.mount`
-- `ansible.builtin.template`
+- `ansible.builtin.copy`
 - `community.general.modprobe`
 - `ansible.builtin.systemd` in handlers
 
