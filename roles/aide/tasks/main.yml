@@ -78,8 +78,8 @@
   when:
     - linux_security_baseline_aide_enabled | bool
     - linux_security_baseline_aide_initialize | bool
-    - not linux_security_baseline_aide_database_stat.stat.exists
-    - not linux_security_baseline_aide_new_database_stat.stat.exists
+    - not linux_security_baseline_aide_database_stat.stat | default({'exists': false}).exists
+    - not linux_security_baseline_aide_new_database_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - aide
@@ -109,8 +109,8 @@
   when:
     - linux_security_baseline_aide_enabled | bool
     - linux_security_baseline_aide_initialize | bool
-    - not linux_security_baseline_aide_database_stat.stat.exists
-    - linux_security_baseline_aide_new_database_after_init_stat.stat.exists
+    - not linux_security_baseline_aide_database_stat.stat | default({'exists': false}).exists
+    - linux_security_baseline_aide_new_database_after_init_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - aide

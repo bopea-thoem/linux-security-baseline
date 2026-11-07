@@ -2,7 +2,7 @@
 - name: Linux Security Baseline
   hosts: all
   become: true
-  gather_facts: true
+  gather_facts: false
   any_errors_fatal: true
   ignore_errors: true
   vars_files:
@@ -13,6 +13,14 @@
       ansible.builtin.import_tasks: ../handlers/main.yml
 
   pre_tasks:
+    - name: Gather facts (safe — ignore sudo failures)
+      ansible.builtin.setup:
+      ignore_errors: true
+      tags:
+        - always
+        - baseline
+        - version_detection
+
     - name: Assert supported Red Hat Enterprise Linux platform
       ansible.builtin.assert:
         that:
@@ -25,6 +33,7 @@
         success_msg: >-
           Supported platform detected: {{ ansible_facts.distribution }}
           {{ ansible_facts.distribution_version }}.
+      when: ansible_facts.distribution is defined
       tags:
         - always
         - baseline
@@ -40,6 +49,7 @@
           {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].package_manager }}
         linux_security_baseline_service_manager: >-
           {{ linux_security_baseline_rhel_version_map[ansible_facts.distribution_major_version].service_manager }}
+      when: ansible_facts.distribution_major_version is defined
       tags:
         - always
         - baseline

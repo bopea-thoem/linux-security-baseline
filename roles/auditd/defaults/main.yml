@@ -256,7 +256,6 @@ linux_security_baseline_auditd_arch_syscall_rules:
       b32:
         - adjtimex
         - settimeofday
-        - stime
         - clock_settime
     filters: []
   - key: system-locale

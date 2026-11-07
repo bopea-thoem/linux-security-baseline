@@ -139,7 +139,7 @@
             'domain': 'rsyslog',
             'control': item.item.control,
             'compliant': (
-              item.stat.exists
+              item.stat | default({'exists': false}).exists
               and (
                 item.item.state == 'directory'
                 and item.stat.isdir

@@ -25,7 +25,7 @@
       - item.stdout | trim == item.item.value | string
     fail_msg: >-
       Network sysctl {{ item.item.name }} expected {{ item.item.value }}
-      but found {{ item.stdout | default(item.stderr) }}.
+      but found {{ item.stdout | default(item.stderr | default('')) }}.
     success_msg: "Network sysctl {{ item.item.name }} is compliant."
   loop: "{{ linux_security_baseline_network_sysctl_verify.results | default([]) }}"
   loop_control:

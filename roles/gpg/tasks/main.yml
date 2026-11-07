@@ -33,7 +33,7 @@
   ansible.builtin.assert:
     that:
       - >-
-        linux_security_baseline_gpg_redhat_release_key_source_stat.stat.exists
+        linux_security_baseline_gpg_redhat_release_key_source_stat.stat | default({'exists': false}).exists
         or linux_security_baseline_gpg_allow_remote_key_source | bool
     fail_msg: >-
       Red Hat release GPG key source file was not found at
@@ -54,7 +54,7 @@
     linux_security_baseline_gpg_effective_redhat_release_key_source: >-
       {{
         linux_security_baseline_gpg_redhat_release_key.path
-        if linux_security_baseline_gpg_redhat_release_key_source_stat.stat.exists
+        if linux_security_baseline_gpg_redhat_release_key_source_stat.stat | default({'exists': false}).exists
         else linux_security_baseline_gpg_redhat_release_key.url
       }}
   when:
@@ -74,6 +74,21 @@
   when:
     - linux_security_baseline_gpg_enabled | bool
     - linux_security_baseline_gpg_manage_redhat_release_key | bool
+  tags:
+    - baseline
+    - gpg
+    - gpg_redhat_key
+
+- name: Verify and install Red Hat 10 release GPG key
+  ansible.builtin.rpm_key:
+    key: "{{ linux_security_baseline_gpg_redhat_10_release_key.path }}"
+    fingerprint: "{{ linux_security_baseline_gpg_redhat_10_release_key_fingerprints[0] }}"
+    state: present
+    validate_certs: "{{ linux_security_baseline_gpg_redhat_10_release_key.validate_certs | bool }}"
+  when:
+    - linux_security_baseline_gpg_enabled | bool
+    - linux_security_baseline_gpg_manage_redhat_release_key | bool
+    - ansible_facts.distribution_major_version | default('0') | int == 10
   tags:
     - baseline
     - gpg

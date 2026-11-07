@@ -83,7 +83,9 @@ linux_security_baseline_pam_pwhistory:
   enforce_for_root: true
 
 linux_security_baseline_pam_password:
-  algorithm: sha512
+  # sha512 for RHEL 7-9; yescrypt is the default on RHEL 10+
+  # Override per-host if needed via host_vars or group_vars
+  algorithm: "{{ 'yescrypt' if (ansible_facts.distribution_major_version | default('9') | int) >= 10 else 'sha512' }}"
   pwquality_retry: 3
 
 linux_security_baseline_pam_tags:

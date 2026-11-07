@@ -8,7 +8,7 @@
   ansible.builtin.slurp:
     src: "{{ linux_security_baseline_auditd_grub_file.path }}"
   register: linux_security_baseline_auditd_grub_slurp
-  when: linux_security_baseline_auditd_grub_file_stat.stat.exists
+  when: linux_security_baseline_auditd_grub_file_stat.stat | default({'exists': false}).exists
 
 - name: Set current GRUB_CMDLINE_LINUX value
   ansible.builtin.set_fact:

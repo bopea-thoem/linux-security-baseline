@@ -45,7 +45,7 @@
             'domain': 'gpg',
             'control': 'Red Hat release GPG key installed',
             'compliant': (
-              linux_security_baseline_verify_gpg_key_file_stat.stat.exists
+              linux_security_baseline_verify_gpg_key_file_stat.stat | default({'exists': false}).exists
               and (
                 linux_security_baseline_verify_gpg_key_ids_effective
                 | select('in', linux_security_baseline_verify_rpm_gpg_keys.stdout | lower)

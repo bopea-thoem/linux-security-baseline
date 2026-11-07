@@ -150,7 +150,7 @@
             'domain': 'audit',
             'control': 'sudo log file for audit watch',
             'compliant': (
-              linux_security_baseline_verify_auditd_sudo_log_stat.stat.exists
+              linux_security_baseline_verify_auditd_sudo_log_stat.stat | default({'exists': false}).exists
               and linux_security_baseline_verify_auditd_sudo_log_stat.stat.pw_name
               == linux_security_baseline_verify_auditd_sudo_log_file_effective.owner
               and linux_security_baseline_verify_auditd_sudo_log_stat.stat.gr_name
@@ -208,7 +208,7 @@
   register: linux_security_baseline_verify_auditd_grub_slurp
   when:
     - (linux_security_baseline_auditd_manage_grub | default(true)) | bool
-    - linux_security_baseline_verify_auditd_grub_stat.stat.exists
+    - linux_security_baseline_verify_auditd_grub_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify
@@ -282,7 +282,7 @@
             'domain': 'audit',
             'control': 'GRUB_CMDLINE_LINUX audit kernel argument',
             'compliant': (
-              linux_security_baseline_verify_auditd_grub_stat.stat.exists
+              linux_security_baseline_verify_auditd_grub_stat.stat | default({'exists': false}).exists
               and linux_security_baseline_verify_auditd_grub_audit_argument_effective
               in linux_security_baseline_verify_auditd_grub_cmdline_args
             ),
@@ -320,7 +320,7 @@
   ansible.builtin.slurp:
     src: "{{ linux_security_baseline_verify_auditd_config_effective.path }}"
   register: linux_security_baseline_verify_auditd_config_slurp
-  when: linux_security_baseline_verify_auditd_config_stat.stat.exists
+  when: linux_security_baseline_verify_auditd_config_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify
@@ -350,7 +350,7 @@
             'domain': 'audit',
             'control': 'auditd.conf ownership and mode',
             'compliant': (
-              linux_security_baseline_verify_auditd_config_stat.stat.exists
+              linux_security_baseline_verify_auditd_config_stat.stat | default({'exists': false}).exists
               and linux_security_baseline_verify_auditd_config_stat.stat.pw_name == 'root'
               and linux_security_baseline_verify_auditd_config_stat.stat.gr_name == 'root'
               and linux_security_baseline_verify_auditd_config_stat.stat.mode
@@ -446,7 +446,7 @@
             'domain': 'audit',
             'control': 'persistent audit rules file ' ~ item.item,
             'compliant': (
-              item.stat.exists
+              item.stat | default({'exists': false}).exists
               and item.stat.pw_name == 'root'
               and item.stat.gr_name == 'root'
               and item.stat.mode == '0640'
@@ -483,7 +483,7 @@
   loop_control:
     label: "{{ item.item }}"
   register: linux_security_baseline_verify_audit_rule_slurps
-  when: item.stat.exists
+  when: item.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify

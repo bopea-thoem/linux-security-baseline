@@ -69,7 +69,7 @@
   ansible.builtin.slurp:
     src: "{{ linux_security_baseline_verify_login_defs_file_effective.path }}"
   register: linux_security_baseline_verify_login_defs_slurp
-  when: linux_security_baseline_verify_login_defs_stat.stat.exists
+  when: linux_security_baseline_verify_login_defs_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify
@@ -104,7 +104,7 @@
   register: linux_security_baseline_verify_login_defs_bashrc_slurp
   when:
     - (linux_security_baseline_login_defs_manage_shell_umask | default(true)) | bool
-    - linux_security_baseline_verify_login_defs_bashrc_stat.stat.exists
+    - linux_security_baseline_verify_login_defs_bashrc_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify
@@ -140,7 +140,7 @@
   register: linux_security_baseline_verify_login_defs_profile_umask_slurp
   when:
     - (linux_security_baseline_login_defs_manage_shell_umask | default(true)) | bool
-    - linux_security_baseline_verify_login_defs_profile_umask_stat.stat.exists
+    - linux_security_baseline_verify_login_defs_profile_umask_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify
@@ -183,7 +183,7 @@
     - >-
       ansible_facts.distribution_major_version | int
       in linux_security_baseline_verify_login_defs_tmout_supported_major_versions_effective
-    - linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.exists
+    - linux_security_baseline_verify_login_defs_profile_tmout_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify
@@ -216,7 +216,7 @@
             'domain': 'login_defs',
             'control': 'login.defs ownership and mode',
             'compliant': (
-              linux_security_baseline_verify_login_defs_stat.stat.exists
+              linux_security_baseline_verify_login_defs_stat.stat | default({'exists': false}).exists
               and linux_security_baseline_verify_login_defs_stat.stat.pw_name
               == linux_security_baseline_verify_login_defs_file_effective.owner
               and linux_security_baseline_verify_login_defs_stat.stat.gr_name
@@ -293,7 +293,7 @@
             'domain': 'login_defs',
             'control': '/etc/bashrc shell umask',
             'compliant': (
-              linux_security_baseline_verify_login_defs_bashrc_stat.stat.exists
+              linux_security_baseline_verify_login_defs_bashrc_stat.stat | default({'exists': false}).exists
               and linux_security_baseline_verify_login_defs_bashrc_stat.stat.pw_name
               == linux_security_baseline_verify_login_defs_bashrc_file_effective.owner
               and linux_security_baseline_verify_login_defs_bashrc_stat.stat.gr_name
@@ -359,7 +359,7 @@
             'domain': 'login_defs',
             'control': 'CIS profile umask script',
             'compliant': (
-              linux_security_baseline_verify_login_defs_profile_umask_stat.stat.exists
+              linux_security_baseline_verify_login_defs_profile_umask_stat.stat | default({'exists': false}).exists
               and linux_security_baseline_verify_login_defs_profile_umask_stat.stat.pw_name
               == linux_security_baseline_verify_login_defs_profile_umask_file_effective.owner
               and linux_security_baseline_verify_login_defs_profile_umask_stat.stat.gr_name
@@ -425,7 +425,7 @@
             'domain': 'login_defs',
             'control': 'shell idle timeout script',
             'compliant': (
-              linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.exists
+              linux_security_baseline_verify_login_defs_profile_tmout_stat.stat | default({'exists': false}).exists
               and linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.pw_name
               == linux_security_baseline_verify_login_defs_profile_tmout_file_effective.owner
               and linux_security_baseline_verify_login_defs_profile_tmout_stat.stat.gr_name

@@ -24,7 +24,7 @@
   register: linux_security_baseline_aide_database_verify_stat
   failed_when:
     - linux_security_baseline_aide_verify_fail_on_drift | bool
-    - not linux_security_baseline_aide_database_verify_stat.stat.exists
+    - not linux_security_baseline_aide_database_verify_stat.stat | default({'exists': false}).exists
   when:
     - linux_security_baseline_aide_verify | bool
     - linux_security_baseline_aide_initialize | bool

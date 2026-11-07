@@ -139,7 +139,7 @@
 - name: Assert required audit watch paths exist
   ansible.builtin.assert:
     that:
-      - item.stat.exists
+      - item.stat | default({'exists': false}).exists
     fail_msg: "Required audit watch path is missing: {{ item.item.path }}"
   loop: "{{ linux_security_baseline_auditd_watch_path_stats.results | default([]) }}"
   loop_control:
@@ -209,7 +209,7 @@
     - linux_security_baseline_auditd_enabled | bool
     - linux_security_baseline_auditd_manage_rules | bool
     - linux_security_baseline_auditd_discover_privileged_commands | bool
-    - item.stat.exists
+    - item.stat | default({'exists': false}).exists
     - item.stat.isdir
   tags:
     - baseline

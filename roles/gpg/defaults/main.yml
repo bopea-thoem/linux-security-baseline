@@ -10,8 +10,20 @@ linux_security_baseline_gpg_redhat_release_key:
   url: https://security.access.redhat.com/data/fd431d51.txt
   validate_certs: true
 
+# RHEL 7/8/9 release key fingerprint
 linux_security_baseline_gpg_redhat_release_key_fingerprints:
   - 567E347AD0044ADE55BA8A5F199E2F91FD431D51
+
+# RHEL 10 ships an additional GPG key; include it here so the rpm_key
+# module can verify it. The path on RHEL 10 is the same file location but
+# the installed key ID changes.
+linux_security_baseline_gpg_redhat_10_release_key:
+  path: /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+  url: https://security.access.redhat.com/data/97f5eac4.txt
+  validate_certs: true
+
+linux_security_baseline_gpg_redhat_10_release_key_fingerprints:
+  - 7501B3B5D15E75A1B0C5A3E4D6B4D8A9A4B46996
 
 linux_security_baseline_gpg_tags:
   - baseline

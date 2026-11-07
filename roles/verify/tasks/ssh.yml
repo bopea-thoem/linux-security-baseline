@@ -194,7 +194,7 @@
             'domain': 'ssh',
             'control': item.item.control ~ ' file mode',
             'compliant': (
-              item.stat.exists
+              item.stat | default({'exists': false}).exists
               and item.stat.pw_name == 'root'
               and item.stat.gr_name == 'root'
               and item.stat.mode == item.item.mode

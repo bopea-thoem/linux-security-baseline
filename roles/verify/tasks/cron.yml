@@ -74,7 +74,7 @@
             'domain': 'cron',
             'control': 'cron path ' ~ item.item.path,
             'compliant': (
-              item.stat.exists
+              item.stat | default({'exists': false}).exists
               and (
                 item.item.state == 'directory'
                 and item.stat.isdir
@@ -89,7 +89,7 @@
                         ~ item.item.owner ~ ':' ~ item.item.group
                         ~ ' ' ~ item.item.mode,
             'actual': (
-              'exists=' ~ item.stat.exists
+              'exists=' ~ item.stat | default({'exists': false}).exists
               ~ ' owner=' ~ (item.stat.pw_name | default('missing'))
               ~ ':' ~ (item.stat.gr_name | default('missing'))
               ~ ' mode=' ~ (item.stat.mode | default('missing'))
@@ -140,7 +140,7 @@
             'domain': 'cron',
             'control': 'allow file ' ~ item.item.path,
             'compliant': (
-              item.stat.exists
+              item.stat | default({'exists': false}).exists
               and item.stat.pw_name == item.item.owner
               and item.stat.gr_name == item.item.group
               and item.stat.mode == item.item.mode
@@ -222,9 +222,9 @@
           {
             'domain': 'cron',
             'control': 'deny file absent ' ~ item.item,
-            'compliant': not item.stat.exists,
+            'compliant': not item.stat | default({'exists': false}).exists,
             'expected': 'absent',
-            'actual': 'present' if item.stat.exists else 'absent',
+            'actual': 'present' if item.stat | default({'exists': false}).exists else 'absent',
             'message': 'Verify cron and at deny files are absent.'
           }
         ]

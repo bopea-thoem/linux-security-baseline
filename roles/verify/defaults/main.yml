@@ -379,8 +379,11 @@ linux_security_baseline_verify_firewalld_service:
 linux_security_baseline_verify_gpg_key_file: /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
 linux_security_baseline_verify_gpg_key_ids:
   - fd431d51
+  - 97f5eac4
 linux_security_baseline_verify_gpg_key_fingerprints:
   - 567E347AD0044ADE55BA8A5F199E2F91FD431D51
+  # RHEL 10 additional key
+  - 7501B3B5D15E75A1B0C5A3E4D6B4D8A9A4B46996
 
 linux_security_baseline_verify_tags:
   - baseline

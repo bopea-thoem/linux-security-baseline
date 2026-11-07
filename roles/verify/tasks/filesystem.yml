@@ -94,7 +94,7 @@
   ansible.builtin.slurp:
     src: "{{ linux_security_baseline_verify_modprobe_conf_effective.path }}"
   register: linux_security_baseline_verify_modprobe_conf_slurp
-  when: linux_security_baseline_verify_modprobe_conf_stat.stat.exists
+  when: linux_security_baseline_verify_modprobe_conf_stat.stat | default({'exists': false}).exists
   tags:
     - baseline
     - verify

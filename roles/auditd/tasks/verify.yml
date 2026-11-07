@@ -201,7 +201,7 @@
     - linux_security_baseline_auditd_verify | bool
     - linux_security_baseline_auditd_manage_rules | bool
     - linux_security_baseline_auditd_discover_privileged_commands | bool
-    - item.stat.exists
+    - item.stat | default({'exists': false}).exists
     - item.stat.isdir
   tags:
     - baseline

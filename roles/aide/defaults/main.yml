@@ -40,7 +40,7 @@ linux_security_baseline_aide_cron:
   command: /usr/sbin/aide --check
 
 linux_security_baseline_aide_crond_service: >-
-  {{ 'crond' if ansible_facts.distribution_major_version | int < 10 else 'crond' }}
+  {{ 'crond' if (ansible_facts.distribution_major_version | default('9') | int) < 10 else 'crond' }}
 
 linux_security_baseline_aide_tags:
   - baseline

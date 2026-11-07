@@ -75,7 +75,7 @@
             'domain': 'aide',
             'control': item.item.control,
             'compliant': (
-              item.stat.exists
+              item.stat | default({'exists': false}).exists
               and item.stat.pw_name == 'root'
               and item.stat.gr_name == 'root'
               and item.stat.mode == item.item.mode

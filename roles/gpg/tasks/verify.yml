@@ -16,7 +16,7 @@
   ansible.builtin.assert:
     that:
       - >-
-        linux_security_baseline_gpg_verify_key_source_stat.stat.exists
+        linux_security_baseline_gpg_verify_key_source_stat.stat | default({'exists': false}).exists
         or linux_security_baseline_gpg_allow_remote_key_source | bool
     fail_msg: >-
       Red Hat release GPG key source file was not found at
@@ -36,7 +36,7 @@
     key: >-
       {{
         linux_security_baseline_gpg_redhat_release_key.path
-        if linux_security_baseline_gpg_verify_key_source_stat.stat.exists
+        if linux_security_baseline_gpg_verify_key_source_stat.stat | default({'exists': false}).exists
         else linux_security_baseline_gpg_redhat_release_key.url
       }}
     fingerprint: "{{ linux_security_baseline_gpg_redhat_release_key_fingerprints[0] }}"
